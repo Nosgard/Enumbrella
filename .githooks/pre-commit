@@ -13,14 +13,8 @@ if ! gitleaks_git --pre-commit --staged; then
   exit 1
 fi
 
-# FORMAT: the project's format check. FORMAT_FILES: its file types as git pathspecs.
-# The hook appends the staged files of these types, e.g.
-#   FORMAT="npx --no prettier --check"
-#   FORMAT_FILES="*.js *.mjs *.cjs *.jsx *.ts *.tsx *.css *.json"
-#   FORMAT="ruff format --check"  FORMAT_FILES="*.py *.pyi"
-#   FORMAT="dotnet format --verify-no-changes --include"  FORMAT_FILES="*.cs"
-FORMAT=""
-FORMAT_FILES=""
+FORMAT="dotnet format --verify-no-changes --include"
+FORMAT_FILES="*.cs"
 
 if [ -n "$FORMAT" ]; then
   [ -n "$FORMAT_FILES" ] || { echo "pre-commit: FORMAT needs FORMAT_FILES." >&2; exit 1; }
@@ -34,9 +28,7 @@ if [ -n "$FORMAT" ]; then
   set +f
 fi
 
-# LINT: the project's lint command, e.g. "npm run lint", "dotnet format --verify-no-changes",
-# "ruff check".
-LINT=""
+LINT="dotnet build -c Release -warnaserror"
 
 if [ -n "$LINT" ]; then
   sh -c "$LINT" || { echo "pre-commit: lint failed." >&2; exit 1; }
