@@ -34,13 +34,13 @@ internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
         var namesByValue = NamesByValue(type);
         var values = schema.Enum ?? Values(namesByValue.Keys, typeInfo);
 
-        if (values is not null)
+        if (values is null)
         {
-            var names = values.Select(value => NameOf(value, typeInfo, namesByValue)).ToList();
-
-            schema.Enum = values;
-            WriteNames(schema, names);
+            return Task.CompletedTask;
         }
+
+        schema.Enum = values;
+        WriteNames(schema, values.Select(value => NameOf(value, typeInfo, namesByValue)).ToList());
 
         return Task.CompletedTask;
     }
