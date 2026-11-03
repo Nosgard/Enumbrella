@@ -1,0 +1,34 @@
+#!/bin/sh
+# pre-push: no direct pushes to the default branch, no secrets or personal data
+# in the commits being pushed, static analysis, then the project's tests.
+
+# gitleaks and its rules: lib-gitleaks.sh next to this hook.
+. "$(dirname "$0")/lib-gitleaks.sh" || exit 1
+
+# git passes the remote's name as $1 and one line per pushed ref on stdin.
+while read -r local_ref local_sha remote_ref remote_sha; do
+  case "$remote_ref" in
+    refs/heads/main|refs/heads/master)
+      echo "pre-push: pushing to $remote_ref is blocked. Open a pull request instead." >&2
+      echo "A human can bypass this on purpose with: git push --no-verify" >&2
+      exit 1 ;;
+  esac
+
+  # A deleted branch (only zeros, SHA-1 or SHA-256) pushes no commits.
+  case "$local_sha" in *[!0]*) ;; *) continue ;; esac
+  scan_push "$1" "$local_sha" "$remote_sha" "$remote_ref" || exit 1
+done
+
+# Static analysis with Semgrep where it is installed; CI runs it in any case.
+if command -v semgrep >/dev/null 2>&1; then
+  semgrep scan --config p/default --metrics=off --disable-version-check \
+    --severity ERROR --error --quiet . || {
+    echo "pre-push: Semgrep found errors, push refused." >&2
+    exit 1
+  }
+fi
+
+TEST="TESTINGPLATFORM_TELEMETRY_OPTOUT=1 dotnet test"
+
+sh -c "$TEST" || { echo "pre-push: tests failed, push refused." >&2; exit 1; }
+exit 0
