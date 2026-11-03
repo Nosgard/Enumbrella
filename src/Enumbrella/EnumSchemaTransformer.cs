@@ -7,12 +7,9 @@ using Microsoft.OpenApi;
 
 namespace Enumbrella;
 
-/// <summary>
-/// Writes the value list and the member names of an enum into its schema.
-/// A missing value list is filled in ascending numeric order; a value declared twice keeps the
-/// name of its first member. An enum whose converter cannot write its values is left untouched.
-/// The host calls it once per schema; it keeps no state between calls.
-/// </summary>
+// Writes the value list and the member names of an enum into its schema. A missing value list
+// is filled in ascending numeric order, and a value declared twice keeps its first member's name.
+// An enum whose converter cannot write its values stays untouched. Holds no state between calls.
 internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
 {
     internal const string VarNamesExtension = "x-enum-varnames";
