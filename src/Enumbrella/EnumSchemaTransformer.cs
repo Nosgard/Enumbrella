@@ -72,7 +72,7 @@ internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
         {
             var value = JsonSerializer.Deserialize(entry, typeInfo);
 
-            return value is not null && namesByValue.TryGetValue(value, out var name) ? name : "";
+            return value is null ? "" : namesByValue.GetValueOrDefault(value, "");
         }
         catch (JsonException)
         {
