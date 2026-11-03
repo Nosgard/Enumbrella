@@ -13,4 +13,9 @@
     <InternalsVisibleTo Include="Enumbrella.Tests" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Using Remove="System.IO" />
+    <Using Remove="System.Net.Http" />
+  </ItemGroup>
+
 </Project>
