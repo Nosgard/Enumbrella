@@ -16,6 +16,8 @@ public class ListLengthTests
             await TestApi.Document<TemperatureResponse>(options => options.AddEnumDescriptions()),
             await TestApi.Document<LevelResponse>(options => options.AddEnumDescriptions()),
             await TestApi.Document<DistanceResponse>(options => options.AddEnumDescriptions()),
+            await TestApi.Document<ConverterFailureTests.UnreadableResponse>(
+                options => options.AddEnumDescriptions()),
         ];
 
         var enumSchemas = documents
@@ -24,7 +26,7 @@ public class ListLengthTests
             .Where(schema => schema["x-enum-varnames"] is not null)
             .ToList();
 
-        Assert.Equal(6, enumSchemas.Count);
+        Assert.Equal(8, enumSchemas.Count);
         Assert.All(enumSchemas, schema =>
         {
             var count = schema["enum"]!.AsArray().Count;
