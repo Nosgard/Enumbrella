@@ -1,7 +1,8 @@
+using Enumbrella;
 using Enumbrella.Sample;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options => options.AddEnumDescriptions());
 
 var app = builder.Build();
 app.MapOpenApi();
