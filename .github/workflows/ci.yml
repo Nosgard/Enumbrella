@@ -78,13 +78,18 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Drop ignore rules from the checkout
+        # A pull request must not exclude its own files from the scan.
+        run: rm -f .semgrepignore
+
       - name: Static analysis
         # Approved version pinned by digest; a newer version needs a new tool check. It runs
-        # before the build, so build output is never scanned, and any finding fails it.
+        # before the build, so build output is never scanned; findings of severity ERROR fail it.
         run: |
           docker run --rm -v "$PWD:/src" -w /src \
             semgrep/semgrep:1.182.1@sha256:451b3d875c00dac7ed5db5293e584a07de11449a409c10b3c2d2652f429630b6 \
-            semgrep scan --config p/default --metrics=off --disable-version-check --error .
+            semgrep scan --config p/default --metrics=off --disable-version-check \
+            --severity ERROR --error .
 
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
@@ -217,6 +222,14 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+
+      - name: Drop audit config from the checkout
+        # A pull request must not turn off the audits that check it.
+        run: |
+          rm -f zizmor.yml
+          rm -f zizmor.yaml
+          rm -f .github/zizmor.yml
+          rm -f .github/zizmor.yaml
 
       - name: Audit workflows
         uses: zizmorcore/zizmor-action@85b2b9fb8e3325e7a23d7d0a9d7ba5ae0f999e3e # v0.7.1
