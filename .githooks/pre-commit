@@ -1,0 +1,45 @@
+#!/bin/sh
+# pre-commit: refuses secrets and personal data (gitleaks), then checks the format of the
+# staged files and runs the project's linter.
+
+# gitleaks and its rules: lib-gitleaks.sh next to this hook.
+. "$(dirname "$0")/lib-gitleaks.sh" || exit 1
+
+# Added lines and staged file names only, so removing a leaked value stays possible.
+if ! gitleaks_git --pre-commit --staged; then
+  echo "pre-commit: secrets or personal data in the staged changes, commit refused." >&2
+  echo "Values belong in the environment (.env)." >&2
+  echo "Test data is invented (example.com, 000 numbers)." >&2
+  exit 1
+fi
+
+# FORMAT: the project's format check. FORMAT_FILES: its file types as git pathspecs.
+# The hook appends the staged files of these types, e.g.
+#   FORMAT="npx --no prettier --check"
+#   FORMAT_FILES="*.js *.mjs *.cjs *.jsx *.ts *.tsx *.css *.json"
+#   FORMAT="ruff format --check"  FORMAT_FILES="*.py *.pyi"
+#   FORMAT="dotnet format --verify-no-changes --include"  FORMAT_FILES="*.cs"
+FORMAT=""
+FORMAT_FILES=""
+
+if [ -n "$FORMAT" ]; then
+  [ -n "$FORMAT_FILES" ] || { echo "pre-commit: FORMAT needs FORMAT_FILES." >&2; exit 1; }
+
+  # Without globbing each pattern reaches git as one pathspec. -z and xargs -0 keep file
+  # names with spaces whole, -r skips the check when no staged file matches.
+  set -f
+  git diff --cached --name-only --diff-filter=ACMR -z -- $FORMAT_FILES |
+    xargs -0 -r sh -c "$FORMAT \"\$@\"" format ||
+    { echo "pre-commit: format check failed, run the formatter on the staged files." >&2; exit 1; }
+  set +f
+fi
+
+# LINT: the project's lint command, e.g. "npm run lint", "dotnet format --verify-no-changes",
+# "ruff check".
+LINT=""
+
+if [ -n "$LINT" ]; then
+  sh -c "$LINT" || { echo "pre-commit: lint failed." >&2; exit 1; }
+fi
+
+exit 0
