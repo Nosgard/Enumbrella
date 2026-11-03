@@ -61,4 +61,13 @@ public class RegistrationTests
         Assert.Equal("Enumbrella.EnumbrellaOpenApiOptionsExtensions", type.FullName);
         Assert.Equal("AddEnumDescriptions", method.Name);
     }
+
+    [Fact]
+    public void assembly_contains_no_generated_openapi_types()
+    {
+        var assembly = typeof(EnumbrellaOpenApiOptionsExtensions).Assembly;
+
+        Assert.DoesNotContain(assembly.GetTypes(), type => type.Namespace is { } ns
+            && ns.StartsWith("Microsoft.AspNetCore.OpenApi", StringComparison.Ordinal));
+    }
 }
