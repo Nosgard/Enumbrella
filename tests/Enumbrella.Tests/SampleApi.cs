@@ -3,9 +3,6 @@ using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace Enumbrella.Tests;
 
-/// <summary>
-/// Fetches the OpenAPI document <c>v1</c> of the sample API hosted in the test process.
-/// </summary>
 internal static class SampleApi
 {
     public static async Task<JsonNode> Document()

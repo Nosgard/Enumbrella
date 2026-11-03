@@ -6,10 +6,6 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Enumbrella.Tests;
 
-/// <summary>
-/// Builds a minimal API in the test process whose only endpoint returns
-/// <typeparamref name="TResponse"/> and fetches its document <c>v1</c> over the test server.
-/// </summary>
 internal static class TestApi
 {
     public static async Task<JsonNode> Document<TResponse>(Action<OpenApiOptions> configure)
