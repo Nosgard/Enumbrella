@@ -36,8 +36,10 @@ internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
 
         if (values is not null)
         {
+            var names = values.Select(value => NameOf(value, typeInfo, namesByValue)).ToList();
+
             schema.Enum = values;
-            WriteNames(schema, values.Select(value => NameOf(value, typeInfo, namesByValue)));
+            WriteNames(schema, names);
         }
 
         return Task.CompletedTask;
@@ -97,16 +99,14 @@ internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
         }
     }
 
-    private static void WriteNames(OpenApiSchema schema, IEnumerable<string> names)
+    private static void WriteNames(OpenApiSchema schema, List<string> names)
     {
-        var list = names.ToList();
-
         schema.Extensions ??= new Dictionary<string, IOpenApiExtension>();
-        schema.Extensions[VarNamesExtension] = new JsonNodeExtension(Strings(list));
-        schema.Extensions[EnumNamesExtension] = new JsonNodeExtension(Strings(list));
+        schema.Extensions[VarNamesExtension] = new JsonNodeExtension(ToJsonArray(names));
+        schema.Extensions[EnumNamesExtension] = new JsonNodeExtension(ToJsonArray(names));
     }
 
-    private static JsonArray Strings(List<string> names)
+    private static JsonArray ToJsonArray(List<string> names)
     {
         return new JsonArray(names.Select(name => (JsonNode?)JsonValue.Create(name)).ToArray());
     }
