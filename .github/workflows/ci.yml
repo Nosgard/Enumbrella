@@ -1,0 +1,226 @@
+# Continuous integration on every pull request and on every push to the default branch.
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions: {}
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  TESTINGPLATFORM_TELEMETRY_OPTOUT: 1
+
+concurrency:
+  # A pull request cancels its older runs; each push to the default branch has a group of its
+  # own, so no merge commit loses its run.
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build-test:
+    name: build-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore --locked-mode
+
+      - name: Format
+        run: dotnet format --verify-no-changes --no-restore
+
+      - name: Build
+        run: dotnet build -c Release -warnaserror --no-restore
+
+      - name: Test
+        run: dotnet test -c Release --no-build
+
+  audit:
+    name: audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Audit dependencies
+        # NuGetAudit checks all packages during restore, and warnings as errors from
+        # Directory.Build.props turn every known vulnerability into a failure.
+        run: dotnet restore --locked-mode
+
+  sast:
+    name: sast
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Static analysis
+        # Approved version pinned by digest; a newer version needs a new tool check. It runs
+        # before the build, so build output is never scanned, and any finding fails it.
+        run: |
+          docker run --rm -v "$PWD:/src" -w /src \
+            semgrep/semgrep:1.182.1@sha256:451b3d875c00dac7ed5db5293e584a07de11449a409c10b3c2d2652f429630b6 \
+            semgrep scan --config p/default --metrics=off --disable-version-check --error .
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore --locked-mode
+
+      - name: Build with analyzers
+        run: dotnet build -c Release -warnaserror --no-restore
+
+  checks:
+    name: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Take the rules from the base commit
+        # A pull request is checked with the rules of its base, so it cannot relax them itself.
+        if: github.event_name == 'pull_request'
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          : "${BASE:?}"
+          # Without a hook in the base the pull request has no rule to relax.
+          if git cat-file -e "$BASE:.githooks/commit-msg" 2>/dev/null; then
+            git show "$BASE:.githooks/commit-msg" > "$RUNNER_TEMP/commit-msg"
+          else
+            cp .githooks/commit-msg "$RUNNER_TEMP/commit-msg"
+          fi
+          for f in .gitleaks.toml .gitleaksignore; do
+            if git cat-file -e "$BASE:$f" 2>/dev/null; then
+              git show "$BASE:$f" > "$RUNNER_TEMP/$f"
+            fi
+            # gitleaks would also read them from the scanned folder.
+            rm -f "$f"
+          done
+
+      - name: Take the rules from the checkout
+        # Pushes to the default branch use the checkout, which only changes through pull requests.
+        if: github.event_name == 'push'
+        run: |
+          for f in .gitleaks.toml .gitleaksignore; do
+            if [ -f "$f" ]; then cp "$f" "$RUNNER_TEMP/$f"; fi
+          done
+
+      - name: Scan for secrets and personal data
+        # Pinned gitleaks CLI with the rules from the step above, or its default rules if the
+        # repository has none: the commits of a pull request, the full history on a push.
+        env:
+          GITLEAKS_VERSION: 8.30.1
+          GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          # A .gitattributes in the repository must not mark files as binary for the scan.
+          mkdir -p .git/info
+          printf '* diff\n' > .git/info/attributes
+
+          url="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}"
+          archive="$RUNNER_TEMP/gitleaks.tar.gz"
+          curl -sSfL -o "$archive" "$url/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  $archive" | sha256sum -c -
+          tar -xzf "$archive" -C "$RUNNER_TEMP" gitleaks
+
+          set -- --redact --no-banner --ignore-gitleaks-allow --gitleaks-ignore-path "$RUNNER_TEMP"
+          if [ -f "$RUNNER_TEMP/.gitleaks.toml" ]; then
+            set -- "$@" -c "$RUNNER_TEMP/.gitleaks.toml"
+          fi
+          if [ "$EVENT" = pull_request ]; then
+            set -- "$@" --log-opts="$BASE..$HEAD"
+          fi
+          "$RUNNER_TEMP/gitleaks" git "$@" .
+
+      - name: Check pull request title
+        # The squash merge makes the title the first line on the default branch, so the base's
+        # commit-msg checks it. Dependabot titles, like its commits, only need the format.
+        if: github.event_name == 'pull_request'
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: |
+          # The exceptions of commit-msg are for local merge, revert and fixup commits only.
+          case "$TITLE" in
+            "Merge "*|"Revert "*|"fixup! "*|"squash! "*|"amend! "*)
+              echo "The pull request title must follow Conventional Commits, got: $TITLE" >&2
+              exit 1 ;;
+          esac
+
+          printf '%s\n' "$TITLE" > "$RUNNER_TEMP/title.txt"
+          if [ "$AUTHOR" = "dependabot[bot]" ]; then
+            printf '\nSigned-off-by: dependabot[bot] (title)\n' >> "$RUNNER_TEMP/title.txt"
+          fi
+
+          if ! sh "$RUNNER_TEMP/commit-msg" "$RUNNER_TEMP/title.txt"; then
+            echo "The pull request title is not accepted by .githooks/commit-msg of the base." >&2
+            exit 1
+          fi
+
+      - name: Check commit messages
+        if: github.event_name == 'pull_request'
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          for sha in $(git rev-list --no-merges "$BASE..$HEAD"); do
+            git log -1 --format=%B "$sha" > "$RUNNER_TEMP/commit-msg.txt"
+
+            if ! sh "$RUNNER_TEMP/commit-msg" "$RUNNER_TEMP/commit-msg.txt"; then
+              commit=$(git log -1 --format='%h %s' "$sha")
+              echo "Commit $commit is not accepted by .githooks/commit-msg of the base." >&2
+              exit 1
+            fi
+          done
+
+  zizmor:
+    name: zizmor
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Audit workflows
+        uses: zizmorcore/zizmor-action@85b2b9fb8e3325e7a23d7d0a9d7ba5ae0f999e3e # v0.7.1
+        with:
+          version: 1.31.1
+          advanced-security: false
+          online-audits: false
