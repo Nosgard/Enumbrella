@@ -10,7 +10,8 @@ namespace Enumbrella;
 /// <summary>
 /// Writes the value list and the member names of an enum into its schema.
 /// A missing value list is filled in ascending numeric order; a value declared twice keeps the
-/// name of its first member. The host calls it once per schema; it keeps no state between calls.
+/// name of its first member. An enum whose converter cannot write its values is left untouched.
+/// The host calls it once per schema; it keeps no state between calls.
 /// </summary>
 internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
 {
@@ -31,12 +32,13 @@ internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
         }
 
         var namesByValue = NamesByValue(type);
-        schema.Enum ??= Values(namesByValue.Keys, typeInfo);
-        var names = schema.Enum.Select(entry => NameOf(entry, typeInfo, namesByValue)).ToList();
+        var values = schema.Enum ?? Values(namesByValue.Keys, typeInfo);
 
-        schema.Extensions ??= new Dictionary<string, IOpenApiExtension>();
-        schema.Extensions[VarNamesExtension] = new JsonNodeExtension(Strings(names));
-        schema.Extensions[EnumNamesExtension] = new JsonNodeExtension(Strings(names));
+        if (values is not null)
+        {
+            schema.Enum = values;
+            WriteNames(schema, values.Select(value => NameOf(value, typeInfo, namesByValue)));
+        }
 
         return Task.CompletedTask;
     }
@@ -53,11 +55,22 @@ internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
         return names;
     }
 
-    private static List<JsonNode> Values(IEnumerable<object> values, JsonTypeInfo typeInfo)
+    private static List<JsonNode>? Values(IEnumerable<object> values, JsonTypeInfo typeInfo)
     {
-        return values.Order()
-            .Select(value => JsonSerializer.SerializeToNode(value, typeInfo)!)
-            .ToList();
+        try
+        {
+            return values.Order()
+                .Select(value => JsonSerializer.SerializeToNode(value, typeInfo)!)
+                .ToList();
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+        catch (NotSupportedException)
+        {
+            return null;
+        }
     }
 
     private static string NameOf(
@@ -82,6 +95,15 @@ internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
         {
             return "";
         }
+    }
+
+    private static void WriteNames(OpenApiSchema schema, IEnumerable<string> names)
+    {
+        var list = names.ToList();
+
+        schema.Extensions ??= new Dictionary<string, IOpenApiExtension>();
+        schema.Extensions[VarNamesExtension] = new JsonNodeExtension(Strings(list));
+        schema.Extensions[EnumNamesExtension] = new JsonNodeExtension(Strings(list));
     }
 
     private static JsonArray Strings(List<string> names)
