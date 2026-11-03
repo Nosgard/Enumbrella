@@ -1,3 +1,7 @@
+using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.Json.Serialization.Metadata;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
@@ -5,7 +9,8 @@ namespace Enumbrella;
 
 /// <summary>
 /// Writes the value list and the member names of an enum into its schema.
-/// The host calls it once per schema; it keeps no state between calls.
+/// A missing value list is filled in ascending numeric order; a value declared twice keeps the
+/// name of its first member. The host calls it once per schema; it keeps no state between calls.
 /// </summary>
 internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
 {
@@ -13,8 +18,74 @@ internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
     internal const string EnumNamesExtension = "x-enumNames";
 
     public Task TransformAsync(
-        OpenApiSchema schema, OpenApiSchemaTransformerContext context, CancellationToken cancellationToken)
+        OpenApiSchema schema,
+        OpenApiSchemaTransformerContext context,
+        CancellationToken cancellationToken)
     {
+        var typeInfo = context.JsonTypeInfo;
+        var type = Nullable.GetUnderlyingType(typeInfo.Type) ?? typeInfo.Type;
+
+        if (!type.IsEnum)
+        {
+            return Task.CompletedTask;
+        }
+
+        var namesByValue = NamesByValue(type);
+        schema.Enum ??= Values(namesByValue.Keys, typeInfo);
+        var names = schema.Enum.Select(entry => NameOf(entry, typeInfo, namesByValue)).ToList();
+
+        schema.Extensions ??= new Dictionary<string, IOpenApiExtension>();
+        schema.Extensions[VarNamesExtension] = new JsonNodeExtension(Strings(names));
+        schema.Extensions[EnumNamesExtension] = new JsonNodeExtension(Strings(names));
+
         return Task.CompletedTask;
+    }
+
+    private static Dictionary<object, string> NamesByValue(Type type)
+    {
+        var names = new Dictionary<object, string>();
+
+        foreach (var field in type.GetFields(BindingFlags.Public | BindingFlags.Static))
+        {
+            names.TryAdd(Enum.ToObject(type, field.GetRawConstantValue()!), field.Name);
+        }
+
+        return names;
+    }
+
+    private static List<JsonNode> Values(IEnumerable<object> values, JsonTypeInfo typeInfo)
+    {
+        return values.Order()
+            .Select(value => JsonSerializer.SerializeToNode(value, typeInfo)!)
+            .ToList();
+    }
+
+    private static string NameOf(
+        JsonNode? entry, JsonTypeInfo typeInfo, Dictionary<object, string> namesByValue)
+    {
+        if (entry is null)
+        {
+            return "";
+        }
+
+        try
+        {
+            var value = JsonSerializer.Deserialize(entry, typeInfo);
+
+            return value is not null && namesByValue.TryGetValue(value, out var name) ? name : "";
+        }
+        catch (JsonException)
+        {
+            return "";
+        }
+        catch (NotSupportedException)
+        {
+            return "";
+        }
+    }
+
+    private static JsonArray Strings(List<string> names)
+    {
+        return new JsonArray(names.Select(name => (JsonNode?)JsonValue.Create(name)).ToArray());
     }
 }

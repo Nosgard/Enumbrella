@@ -17,9 +17,25 @@ public class RegistrationTests
     }
 
     [Fact]
+    public async Task only_the_registered_host_writes_x_enum_extensions()
+    {
+        var registered = await TestApi.Document<Order>(options => options.AddEnumDescriptions());
+        var unregistered = await TestApi.Document<Order>(_ => { });
+
+        var registeredSchemas = registered["components"]!["schemas"]!.AsObject();
+        var unregisteredSchemas = unregistered["components"]!["schemas"]!.AsObject();
+
+        Assert.NotNull(registeredSchemas["OrderStatus"]!["x-enum-varnames"]);
+        Assert.All(unregisteredSchemas, schema => Assert.DoesNotContain(
+            schema.Value!.AsObject(),
+            property => property.Key.StartsWith("x-enum", StringComparison.Ordinal)));
+    }
+
+    [Fact]
     public void AddEnumDescriptions_throws_on_null_options()
     {
-        Assert.Throws<ArgumentNullException>(() => EnumbrellaOpenApiOptionsExtensions.AddEnumDescriptions(null!));
+        Assert.Throws<ArgumentNullException>(
+            () => EnumbrellaOpenApiOptionsExtensions.AddEnumDescriptions(null!));
     }
 
     [Fact]
@@ -36,10 +52,11 @@ public class RegistrationTests
     public void assembly_exposes_exactly_one_public_type_with_one_public_method()
     {
         var assembly = typeof(EnumbrellaOpenApiOptionsExtensions).Assembly;
+        var declared = BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance
+            | BindingFlags.DeclaredOnly;
 
         var type = Assert.Single(assembly.GetExportedTypes());
-        var method = Assert.Single(type.GetMethods(
-            BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly));
+        var method = Assert.Single(type.GetMethods(declared));
 
         Assert.Equal("Enumbrella.EnumbrellaOpenApiOptionsExtensions", type.FullName);
         Assert.Equal("AddEnumDescriptions", method.Name);

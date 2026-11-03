@@ -11,7 +11,9 @@ public static class EnumbrellaOpenApiOptionsExtensions
     /// </summary>
     /// <param name="options">The options passed by <c>AddOpenApi</c>.</param>
     /// <returns>The same <paramref name="options"/> for further calls.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="options"/> is <see langword="null"/>.
+    /// </exception>
     public static OpenApiOptions AddEnumDescriptions(this OpenApiOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
