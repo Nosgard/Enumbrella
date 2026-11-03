@@ -28,8 +28,8 @@ internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
             return Task.CompletedTask;
         }
 
-        var namesByValue = NamesByValue(type);
-        var values = schema.Enum ?? Values(namesByValue.Keys, typeInfo);
+        var namesByValue = MapNamesByValue(type);
+        var values = schema.Enum ?? SerializeSortedValues(namesByValue.Keys, typeInfo);
 
         if (values is null)
         {
@@ -42,7 +42,7 @@ internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
         return Task.CompletedTask;
     }
 
-    private static Dictionary<object, string> NamesByValue(Type type)
+    private static Dictionary<object, string> MapNamesByValue(Type type)
     {
         var names = new Dictionary<object, string>();
 
@@ -54,7 +54,8 @@ internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
         return names;
     }
 
-    private static List<JsonNode>? Values(IEnumerable<object> values, JsonTypeInfo typeInfo)
+    private static List<JsonNode>? SerializeSortedValues(
+        IEnumerable<object> values, JsonTypeInfo typeInfo)
     {
         try
         {
