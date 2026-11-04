@@ -1,0 +1,20 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{json,props,csproj,slnx,config,editorconfig}]
+indent_size = 2
+
+[*.cs]
+dotnet_style_allow_statement_immediately_after_block_experimental = false
+dotnet_diagnostic.IDE2003.severity = warning
+
+# Test names read as sentences with underscores; CA1707 targets public API naming.
+[tests/**.cs]
+dotnet_diagnostic.CA1707.severity = none

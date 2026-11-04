@@ -1,0 +1,35 @@
+version: 2
+updates:
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # 0 turns off routine version updates; security updates still open pull requests.
+    open-pull-requests-limit: 0
+    cooldown:
+      default-days: 14
+    ignore:
+      # Version 11 of both packages belongs to .NET 11, which the project does not target yet.
+      - dependency-name: "Microsoft.AspNetCore.OpenApi"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Microsoft.AspNetCore.Mvc.Testing"
+        update-types: ["version-update:semver-major"]
+    commit-message:
+      prefix: "build"
+      include: "scope"
+
+  # Keeps the SHA pins of the workflow actions current, one grouped pull request at a time.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 14
+    groups:
+      actions:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "build"
+      include: "scope"
