@@ -20,4 +20,13 @@
     <ProjectReference Include="../../src/Enumbrella/Enumbrella.csproj" />
   </ItemGroup>
 
+  <!-- The OpenAPI XML comment generator intercepts AddOpenApi(name, configure) and would put its
+       own transformer ahead of Enumbrella's in every test host. -->
+  <Target Name="RemoveOpenApiXmlCommentGenerator" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <Analyzer Remove="@(Analyzer)"
+                Condition="'%(Filename)' == 'Microsoft.AspNetCore.OpenApi.SourceGenerators'" />
+    </ItemGroup>
+  </Target>
+
 </Project>
