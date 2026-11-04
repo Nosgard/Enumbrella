@@ -36,15 +36,20 @@ public class NullableEnumTests
         Assert.Equal(4, schema["x-enum-varnames"]!.AsArray().Count);
     }
 
+    internal static void KeepEnumsInline(OpenApiOptions options)
+    {
+        options.CreateSchemaReferenceId = type =>
+            (Nullable.GetUnderlyingType(type.Type) ?? type.Type).IsEnum
+                ? null
+                : OpenApiOptions.CreateDefaultSchemaReferenceId(type);
+    }
+
     private static async Task<JsonNode> InlineStatusSchema(Action<OpenApiOptions> register)
     {
         var document = await TestApi.Document<NullableStatusResponse>(options =>
         {
             register(options);
-            options.CreateSchemaReferenceId = type =>
-                (Nullable.GetUnderlyingType(type.Type) ?? type.Type).IsEnum
-                    ? null
-                    : OpenApiOptions.CreateDefaultSchemaReferenceId(type);
+            KeepEnumsInline(options);
         });
 
         var response = document["components"]!["schemas"]!["NullableStatusResponse"]!;
