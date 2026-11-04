@@ -69,8 +69,6 @@ public class DocumentScopeTests
 
     private static void AssertNoEnumExtensions(JsonNode document)
     {
-        Assert.All(Schemas(document), schema => Assert.DoesNotContain(
-            schema.Value!.AsObject(),
-            property => property.Key.StartsWith("x-enum", StringComparison.Ordinal)));
+        Assert.DoesNotContain("\"x-enum", document.ToJsonString(), StringComparison.Ordinal);
     }
 }
