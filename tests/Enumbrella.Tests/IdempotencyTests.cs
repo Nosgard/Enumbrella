@@ -20,14 +20,13 @@ public class IdempotencyTests
         var document = await TestApi.Document<TwoStatusesResponse>(
             options => options.AddEnumDescriptions());
 
+        const string names = "[\"Pending\",\"Approved\",\"Rejected\"]";
         var schemas = document["components"]!["schemas"]!.AsObject();
         var schema = schemas["OrderStatus"]!;
-        var varNames = schema["x-enum-varnames"]!.AsArray().Select(n => n!.GetValue<string>());
-        var enumNames = schema["x-enumNames"]!.AsArray().Select(n => n!.GetValue<string>());
 
         Assert.Single(schemas, s => s.Key.Contains("OrderStatus", StringComparison.Ordinal));
         Assert.Equal("[0,1,2]", schema["enum"]!.ToJsonString());
-        Assert.Equal(["Pending", "Approved", "Rejected"], varNames);
-        Assert.Equal(["Pending", "Approved", "Rejected"], enumNames);
+        Assert.Equal(names, schema["x-enum-varnames"]!.ToJsonString());
+        Assert.Equal(names, schema["x-enumNames"]!.ToJsonString());
     }
 }

@@ -41,18 +41,14 @@ public class NullableEnumTests
         var document = await TestApi.Document<NullableStatusResponse>(options =>
         {
             register(options);
-            options.CreateSchemaReferenceId = type => IsEnum(type.Type)
-                ? null
-                : OpenApiOptions.CreateDefaultSchemaReferenceId(type);
+            options.CreateSchemaReferenceId = type =>
+                (Nullable.GetUnderlyingType(type.Type) ?? type.Type).IsEnum
+                    ? null
+                    : OpenApiOptions.CreateDefaultSchemaReferenceId(type);
         });
 
         var response = document["components"]!["schemas"]!["NullableStatusResponse"]!;
 
         return response["properties"]!["status"]!;
-    }
-
-    private static bool IsEnum(Type type)
-    {
-        return (Nullable.GetUnderlyingType(type) ?? type).IsEnum;
     }
 }
