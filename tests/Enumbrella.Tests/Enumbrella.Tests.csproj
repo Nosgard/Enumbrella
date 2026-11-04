@@ -20,8 +20,8 @@
     <ProjectReference Include="../../src/Enumbrella/Enumbrella.csproj" />
   </ItemGroup>
 
-  <!-- The OpenAPI XML comment generator intercepts AddOpenApi(name, configure) and would put its
-       own transformer ahead of Enumbrella's in every test host. -->
+  <!-- The OpenAPI XML comment generator intercepts AddOpenApi(name, configure): the test build
+       fails with CS9137, and with interceptors enabled it would add its own transformer. -->
   <Target Name="RemoveOpenApiXmlCommentGenerator" BeforeTargets="CoreCompile">
     <ItemGroup>
       <Analyzer Remove="@(Analyzer)"
