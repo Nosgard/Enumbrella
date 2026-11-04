@@ -24,7 +24,9 @@ public class IdempotencyTests
         var schemas = document["components"]!["schemas"]!.AsObject();
         var schema = schemas["OrderStatus"]!;
 
-        Assert.Single(schemas, s => s.Key.Contains("OrderStatus", StringComparison.Ordinal));
+        Assert.Single(
+            schemas,
+            component => component.Key.Contains("OrderStatus", StringComparison.Ordinal));
         Assert.Equal("[0,1,2]", schema["enum"]!.ToJsonString());
         Assert.Equal(names, schema["x-enum-varnames"]!.ToJsonString());
         Assert.Equal(names, schema["x-enumNames"]!.ToJsonString());

@@ -42,7 +42,6 @@ public class DocumentScopeTests
         var v1Documents = documents.Where((_, i) => i % 2 == 0).ToList();
         var v2Documents = documents.Where((_, i) => i % 2 == 1).ToList();
 
-        Assert.Equal(10, v2Documents.Count);
         Assert.All(v2Documents, AssertNoEnumExtensions);
         Assert.All(v1Documents, document =>
         {

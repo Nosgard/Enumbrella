@@ -10,7 +10,7 @@ public class NullableEnumTests
     {
         var schema = await InlineStatusSchema(options => options.AddEnumDescriptions());
 
-        var types = schema["type"]!.AsArray().Select(t => t!.GetValue<string>()).Order();
+        var types = schema["type"]!.AsArray().Select(entry => entry!.GetValue<string>()).Order();
 
         Assert.Equal(["integer", "null"], types);
         Assert.Equal("[0,1,2,null]", schema["enum"]!.ToJsonString());
@@ -38,10 +38,10 @@ public class NullableEnumTests
 
     internal static void KeepEnumsInline(OpenApiOptions options)
     {
-        options.CreateSchemaReferenceId = type =>
-            (Nullable.GetUnderlyingType(type.Type) ?? type.Type).IsEnum
+        options.CreateSchemaReferenceId = typeInfo =>
+            (Nullable.GetUnderlyingType(typeInfo.Type) ?? typeInfo.Type).IsEnum
                 ? null
-                : OpenApiOptions.CreateDefaultSchemaReferenceId(type);
+                : OpenApiOptions.CreateDefaultSchemaReferenceId(typeInfo);
     }
 
     private static async Task<JsonNode> InlineStatusSchema(Action<OpenApiOptions> register)
