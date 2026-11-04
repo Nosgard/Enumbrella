@@ -64,12 +64,7 @@ internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
                 .Select(value => JsonSerializer.SerializeToNode(value, typeInfo)!)
                 .ToList();
 
-            if (schema.Type?.HasFlag(JsonSchemaType.Null) == true)
-            {
-                nodes.Add(null!);
-            }
-
-            return nodes;
+            return schema.Type?.HasFlag(JsonSchemaType.Null) == true ? [.. nodes, null!] : nodes;
         }
         catch (JsonException)
         {
