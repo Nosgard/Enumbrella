@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <!-- The OpenAPI XML comment generator intercepts AddOpenApi(string, Action<OpenApiOptions>). Its
-       build targets reach direct references only, so with it the build fails with CS9137. -->
+       build targets reach direct references only, so keeping it fails the build with CS9137. -->
   <Target Name="RemoveOpenApiXmlCommentGenerator" BeforeTargets="CoreCompile">
     <ItemGroup>
       <Analyzer Remove="@(Analyzer)"

@@ -9,7 +9,7 @@ namespace Enumbrella;
 
 // Writes the value list and the member names of an enum into its schema. A missing value list
 // is filled in ascending numeric order, and a value declared twice keeps its first member's name.
-// A filled list ends with null when the schema type allows null; that entry has an empty name.
+// The list filled in here ends with null when the schema type allows null, with an empty name.
 // An enum whose converter cannot write its values stays untouched. Holds no state between calls.
 internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
 {
