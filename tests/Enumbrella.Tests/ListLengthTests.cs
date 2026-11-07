@@ -6,7 +6,7 @@ namespace Enumbrella.Tests;
 public class ListLengthTests
 {
     [Fact]
-    public async Task every_enum_schema_has_name_lists_as_long_as_enum()
+    public async Task every_enum_schema_has_equal_name_lists_as_long_as_enum()
     {
         JsonNode[] documents =
         [
@@ -34,7 +34,8 @@ public class ListLengthTests
             var count = schema["enum"]!.AsArray().Count;
 
             Assert.Equal(count, schema["x-enum-varnames"]!.AsArray().Count);
-            Assert.Equal(count, schema["x-enumNames"]!.AsArray().Count);
+            Assert.Equal(
+                schema["x-enum-varnames"]!.ToJsonString(), schema["x-enumNames"]!.ToJsonString());
         });
     }
 }
