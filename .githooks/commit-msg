@@ -1,0 +1,53 @@
+#!/bin/sh
+# commit-msg: enforces Conventional Commits 1.0.0 (https://www.conventionalcommits.org/en/v1.0.0/)
+# with the type in lowercase and a first line of at most 72 characters. CI checks the pull
+# request title with this hook too.
+# Trailers such as Co-authored-by are allowed.
+
+msg_file="$1"
+# Comment lines and everything below the scissors line of `git commit -v` are not part of it.
+msg=$(sed '/^# -* >8 -*$/,$d' "$msg_file" | tr -d '\r' | grep -v '^#')
+header=$(printf '%s\n' "$msg" | sed -n '1p')
+second=$(printf '%s\n' "$msg" | sed -n '2p')
+
+# Messages git writes itself for merges, reverts and history cleanup stay allowed.
+case "$header" in
+  "fixup! "*|"squash! "*|"amend! "*) exit 0 ;;
+  "Merge branch "*|"Merge remote-tracking branch "*|"Merge tag "*) exit 0 ;;
+  "Merge commit "*|"Merge pull request "*) exit 0 ;;
+  'Revert "'*)
+    printf '%s\n' "$msg" | grep -Eq '^This reverts commit [0-9a-f]{7,40}\.' && exit 0 ;;
+esac
+
+TYPES='feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert'
+if ! printf '%s\n' "$header" | grep -Eq "^($TYPES)(\([A-Za-z0-9._/-]+\))?!?: [^ ]"; then
+  echo "commit-msg: the first line does not follow Conventional Commits, commit refused." >&2
+  echo "  got:      $header" >&2
+  echo "  expected: <type>[(scope)][!]: <description>" >&2
+  echo "  types:    feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert" >&2
+  echo "            in lowercase" >&2
+  echo "  example:  feat(api): add search endpoint" >&2
+  exit 1
+fi
+
+if [ -n "$second" ]; then
+  echo "commit-msg: leave one blank line between the first line and the body, commit refused." >&2
+  exit 1
+fi
+
+# Dependabot writes first lines over 72 characters; its commits only need the format checks.
+case "$msg" in
+  *"Signed-off-by: dependabot[bot] "*) ;;
+  *)
+    if [ "${#header}" -gt 72 ]; then
+      echo "commit-msg: the first line has ${#header} characters, at most 72, commit refused." >&2
+      exit 1
+    fi
+    ;;
+esac
+
+if printf '%s\n' "$msg" | grep -Ei '^breaking[ -]change:' | grep -Evq '^BREAKING[ -]CHANGE:'; then
+  echo "commit-msg: the BREAKING CHANGE footer must be uppercase, commit refused." >&2
+  exit 1
+fi
+exit 0
