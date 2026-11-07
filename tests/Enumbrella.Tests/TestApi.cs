@@ -10,18 +10,41 @@ internal static class TestApi
 {
     public static async Task<JsonNode> Document<TResponse>(Action<OpenApiOptions> configure)
     {
+        await using var app = await Start(MapResponse<TResponse>, ("v1", configure));
+
+        return await Fetch(app, "v1");
+    }
+
+    public static async Task<WebApplication> Start(
+        Action<WebApplication> mapEndpoints,
+        params (string Name, Action<OpenApiOptions> Configure)[] documents)
+    {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
-        builder.Services.AddOpenApi(configure);
 
-        await using var app = builder.Build();
+        foreach (var (name, configure) in documents)
+        {
+            builder.Services.AddOpenApi(name, configure);
+        }
+
+        var app = builder.Build();
         app.MapOpenApi();
-        app.MapGet("/", () => default(TResponse)!);
+        mapEndpoints(app);
         await app.StartAsync();
 
+        return app;
+    }
+
+    public static async Task<JsonNode> Fetch(WebApplication app, string document)
+    {
         using var client = app.GetTestClient();
-        var json = await client.GetStringAsync("/openapi/v1.json");
+        var json = await client.GetStringAsync($"/openapi/{document}.json");
 
         return JsonNode.Parse(json)!;
+    }
+
+    public static void MapResponse<TResponse>(WebApplication app)
+    {
+        app.MapGet("/", () => default(TResponse)!);
     }
 }
