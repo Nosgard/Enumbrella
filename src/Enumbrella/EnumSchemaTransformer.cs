@@ -12,8 +12,8 @@ namespace Enumbrella;
 // An enum whose converter cannot write its values stays untouched. Holds no state between calls.
 internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
 {
-    internal const string VarNamesExtension = "x-enum-varnames";
-    internal const string EnumNamesExtension = "x-enumNames";
+    private const string VarNamesExtension = "x-enum-varnames";
+    private const string EnumNamesExtension = "x-enumNames";
 
     public Task TransformAsync(
         OpenApiSchema schema,
