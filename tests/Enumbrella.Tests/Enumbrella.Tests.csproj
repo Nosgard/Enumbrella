@@ -20,4 +20,13 @@
     <ProjectReference Include="../../src/Enumbrella/Enumbrella.csproj" />
   </ItemGroup>
 
+  <!-- The OpenAPI XML comment generator intercepts AddOpenApi(name, configure): the test build
+       fails with CS9137, and with interceptors enabled it would add its own transformer. -->
+  <Target Name="RemoveOpenApiXmlCommentGenerator" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <Analyzer Remove="@(Analyzer)"
+                Condition="'%(Filename)' == 'Microsoft.AspNetCore.OpenApi.SourceGenerators'" />
+    </ItemGroup>
+  </Target>
+
 </Project>
