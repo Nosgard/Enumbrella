@@ -105,7 +105,7 @@ public class NullableEnumTests
         AssertOneStatusComponent(await EndpointDocument(MapPlainStatus, MapNullableStatus));
     }
 
-    private static async Task<JsonNode> EndpointDocument(params Action<WebApplication>[] endpoints)
+    internal static async Task<JsonNode> EndpointDocument(params Action<WebApplication>[] endpoints)
     {
         await using var app = await TestApi.Start(
             host => Array.ForEach(endpoints, map => map(host)),
@@ -114,12 +114,12 @@ public class NullableEnumTests
         return await TestApi.Fetch(app, "v1");
     }
 
-    private static void MapNullableStatus(WebApplication app)
+    internal static void MapNullableStatus(WebApplication app)
     {
         app.MapGet("/nullable", () => default(OrderStatus?));
     }
 
-    private static void MapPlainStatus(WebApplication app)
+    internal static void MapPlainStatus(WebApplication app)
     {
         app.MapGet("/plain", () => default(OrderStatus));
     }

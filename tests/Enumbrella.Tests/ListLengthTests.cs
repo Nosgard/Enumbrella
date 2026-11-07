@@ -24,6 +24,14 @@ public class ListLengthTests
                 options => options.AddEnumDescriptions()),
             await TestApi.InlineEnumDocument<NullableStatusResponse>(
                 options => options.AddEnumDescriptions()),
+            await TestApi.Document<ScopeResponse>(options => options.AddEnumDescriptions()),
+            await TestApi.Document<TwoStatusesResponse>(options => options.AddEnumDescriptions()),
+            await TestApi.Document<NullableFirstResponse>(options => options.AddEnumDescriptions()),
+            await TestApi.Document<PlainFirstResponse>(options => options.AddEnumDescriptions()),
+            await NullableEnumTests.EndpointDocument(
+                NullableEnumTests.MapNullableStatus, NullableEnumTests.MapPlainStatus),
+            await NullableEnumTests.EndpointDocument(
+                NullableEnumTests.MapPlainStatus, NullableEnumTests.MapNullableStatus),
         ];
 
         var components = documents
@@ -38,7 +46,7 @@ public class ListLengthTests
             .Where(schema => schema["x-enum-varnames"] is not null)
             .ToList();
 
-        Assert.Equal(11, enumSchemas.Count);
+        Assert.Equal(17, enumSchemas.Count);
         Assert.All(enumSchemas, schema =>
         {
             var count = schema["enum"]!.AsArray().Count;
