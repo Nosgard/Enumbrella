@@ -20,15 +20,25 @@ public class ListLengthTests
                 options => options.AddEnumDescriptions()),
             await TestApi.Document<ConverterFailureTests.UndeclaredResponse>(
                 options => options.AddEnumDescriptions()),
+            await TestApi.Document<NullableStatusResponse>(
+                options => options.AddEnumDescriptions()),
+            await TestApi.InlineEnumDocument<NullableStatusResponse>(
+                options => options.AddEnumDescriptions()),
         ];
 
-        var enumSchemas = documents
+        var components = documents
             .SelectMany(document => document["components"]!["schemas"]!.AsObject())
             .Select(schema => schema.Value!)
+            .ToList();
+        var properties = components
+            .SelectMany(schema => schema["properties"]?.AsObject() ?? [])
+            .Select(property => property.Value!);
+        var enumSchemas = components
+            .Concat(properties)
             .Where(schema => schema["x-enum-varnames"] is not null)
             .ToList();
 
-        Assert.Equal(9, enumSchemas.Count);
+        Assert.Equal(11, enumSchemas.Count);
         Assert.All(enumSchemas, schema =>
         {
             var count = schema["enum"]!.AsArray().Count;

@@ -29,6 +29,53 @@ public class NullableEnumTests
     }
 
     [Fact]
+    public async Task inline_nullable_enum_ends_its_values_with_null()
+    {
+        var document = await TestApi.InlineEnumDocument<NullableStatusResponse>(
+            options => options.AddEnumDescriptions());
+
+        Assert.Equal("[0,1,2,null]", StatusProperty(document)["enum"]!.ToJsonString());
+    }
+
+    [Fact]
+    public async Task inline_nullable_enum_has_an_empty_name_for_null()
+    {
+        var document = await TestApi.InlineEnumDocument<NullableStatusResponse>(
+            options => options.AddEnumDescriptions());
+
+        var schema = StatusProperty(document);
+        var names = "[\"Pending\",\"Approved\",\"Rejected\",\"\"]";
+
+        Assert.Equal(names, schema["x-enum-varnames"]!.ToJsonString());
+        Assert.Equal(names, schema["x-enumNames"]!.ToJsonString());
+    }
+
+    [Fact]
+    public async Task inline_nullable_type_stays_as_the_host_wrote_it()
+    {
+        var registered = await TestApi.InlineEnumDocument<NullableStatusResponse>(
+            options => options.AddEnumDescriptions());
+        var unregistered = await TestApi.InlineEnumDocument<NullableStatusResponse>(_ => { });
+
+        var expected = "[\"null\",\"integer\"]";
+
+        Assert.Equal(expected, StatusProperty(unregistered)["type"]!.ToJsonString());
+        Assert.Equal(expected, StatusProperty(registered)["type"]!.ToJsonString());
+    }
+
+    [Fact]
+    public async Task registering_twice_keeps_one_null_in_an_inline_enum()
+    {
+        var once = await TestApi.InlineEnumDocument<NullableStatusResponse>(
+            options => options.AddEnumDescriptions());
+        var twice = await TestApi.InlineEnumDocument<NullableStatusResponse>(
+            options => options.AddEnumDescriptions().AddEnumDescriptions());
+
+        Assert.Equal("[0,1,2,null]", StatusProperty(twice)["enum"]!.ToJsonString());
+        Assert.Equal(once.ToJsonString(), twice.ToJsonString());
+    }
+
+    [Fact]
     public async Task one_component_when_the_nullable_property_comes_first()
     {
         var document = await TestApi.Document<NullableFirstResponse>(

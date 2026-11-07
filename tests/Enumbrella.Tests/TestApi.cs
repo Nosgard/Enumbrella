@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization.Metadata;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.AspNetCore.TestHost;
@@ -46,5 +47,21 @@ internal static class TestApi
     public static void MapResponse<TResponse>(WebApplication app)
     {
         app.MapGet("/", () => default(TResponse)!);
+    }
+
+    public static Task<JsonNode> InlineEnumDocument<TResponse>(Action<OpenApiOptions> configure)
+    {
+        return Document<TResponse>(options =>
+        {
+            options.CreateSchemaReferenceId = InlineEnumReferenceId;
+            configure(options);
+        });
+    }
+
+    private static string? InlineEnumReferenceId(JsonTypeInfo typeInfo)
+    {
+        var type = Nullable.GetUnderlyingType(typeInfo.Type) ?? typeInfo.Type;
+
+        return type.IsEnum ? null : OpenApiOptions.CreateDefaultSchemaReferenceId(typeInfo);
     }
 }
