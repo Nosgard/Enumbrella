@@ -9,6 +9,7 @@ namespace Enumbrella;
 
 // Writes the value list and the member names of an enum into its schema. A missing value list
 // is filled in ascending numeric order, and a value declared twice keeps its first member's name.
+// The list filled in here ends with null when the schema type allows null, with an empty name.
 // An enum whose converter cannot write its values stays untouched. Holds no state between calls.
 internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
 {
@@ -21,14 +22,15 @@ internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
         CancellationToken cancellationToken)
     {
         var typeInfo = context.JsonTypeInfo;
+        var enumType = Nullable.GetUnderlyingType(typeInfo.Type) ?? typeInfo.Type;
 
-        if (!typeInfo.Type.IsEnum)
+        if (!enumType.IsEnum)
         {
             return Task.CompletedTask;
         }
 
-        var namesByValue = MapNamesByValue(typeInfo.Type);
-        var values = schema.Enum ?? SerializeSortedValues(namesByValue.Keys, typeInfo);
+        var namesByValue = MapNamesByValue(enumType);
+        var values = schema.Enum ?? SerializeSortedValues(namesByValue.Keys, typeInfo, schema);
 
         if (values is null)
         {
@@ -54,13 +56,15 @@ internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
     }
 
     private static List<JsonNode>? SerializeSortedValues(
-        IEnumerable<object> values, JsonTypeInfo typeInfo)
+        IEnumerable<object> values, JsonTypeInfo typeInfo, OpenApiSchema schema)
     {
         try
         {
-            return values.Order()
+            var nodes = values.Order()
                 .Select(value => JsonSerializer.SerializeToNode(value, typeInfo)!)
                 .ToList();
+
+            return schema.Type?.HasFlag(JsonSchemaType.Null) == true ? [.. nodes, null!] : nodes;
         }
         catch (JsonException)
         {
