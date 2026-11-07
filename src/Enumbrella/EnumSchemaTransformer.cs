@@ -21,13 +21,14 @@ internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
         CancellationToken cancellationToken)
     {
         var typeInfo = context.JsonTypeInfo;
+        var enumType = Nullable.GetUnderlyingType(typeInfo.Type) ?? typeInfo.Type;
 
-        if (!typeInfo.Type.IsEnum)
+        if (!enumType.IsEnum)
         {
             return Task.CompletedTask;
         }
 
-        var namesByValue = MapNamesByValue(typeInfo.Type);
+        var namesByValue = MapNamesByValue(enumType);
         var values = schema.Enum ?? SerializeSortedValues(namesByValue.Keys, typeInfo);
 
         if (values is null)

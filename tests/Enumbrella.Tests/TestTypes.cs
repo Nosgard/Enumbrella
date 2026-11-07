@@ -40,3 +40,9 @@ internal sealed record DistanceResponse(Distance Distance);
 internal sealed record ScopeResponse(OrderStatus Status, OrderStatus? Optional, int? Count);
 
 internal sealed record TwoStatusesResponse(OrderStatus First, OrderStatus Second);
+
+internal sealed record NullableStatusResponse(OrderStatus? Status);
+
+internal sealed record NullableFirstResponse(OrderStatus? First, OrderStatus Second);
+
+internal sealed record PlainFirstResponse(OrderStatus First, OrderStatus? Second);
