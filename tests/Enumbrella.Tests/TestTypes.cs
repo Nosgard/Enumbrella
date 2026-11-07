@@ -38,3 +38,5 @@ internal sealed record LevelResponse(Level Level);
 internal sealed record DistanceResponse(Distance Distance);
 
 internal sealed record ScopeResponse(OrderStatus Status, OrderStatus? Optional, int? Count);
+
+internal sealed record TwoStatusesResponse(OrderStatus First, OrderStatus Second);
