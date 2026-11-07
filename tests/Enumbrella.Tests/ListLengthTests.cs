@@ -13,8 +13,12 @@ public class ListLengthTests
     [Fact]
     public async Task every_enum_schema_has_equal_name_lists_as_long_as_enum()
     {
+        // Given: the documents of the sample API and of each test API
+
+        // When: the schemas with name lists are collected
         var enumSchemas = EnumSchemas(await Documents());
 
+        // Then: each name list is as long as enum and both name lists match
         Assert.Equal(17, enumSchemas.Count);
         Assert.All(enumSchemas, schema =>
         {

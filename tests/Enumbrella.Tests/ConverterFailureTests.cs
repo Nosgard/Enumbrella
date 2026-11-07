@@ -8,12 +8,16 @@ public class ConverterFailureTests
     [Fact]
     public async Task schema_stays_untouched_when_the_converter_cannot_write_values()
     {
+        // Given: two enums whose converters throw on every write
         string[] names = ["FailsOnWrite", "RejectedOnWrite"];
+
+        // When: the document is generated
         var document = await TestApi.Document<UnwritableResponse>(
             options => options.AddEnumDescriptions());
 
         var schemas = document["components"]!["schemas"]!;
 
+        // Then: neither schema gets a value list or a name list
         Assert.All(names, name => Assert.DoesNotContain(
             schemas[name]!.AsObject(),
             property => property.Key == "enum"
@@ -23,11 +27,15 @@ public class ConverterFailureTests
     [Fact]
     public async Task unreadable_values_yield_empty_names()
     {
+        // Given: two enums whose converters throw on every read
+
+        // When: the document is generated
         var document = await TestApi.Document<UnreadableResponse>(
             options => options.AddEnumDescriptions());
 
         var schemas = document["components"]!["schemas"]!;
 
+        // Then: each value stays listed with an empty name
         Assert.Equal("[\"\"]", schemas["RejectedOnRead"]!["x-enum-varnames"]!.ToJsonString());
         Assert.Equal("[\"\"]", schemas["UnsupportedOnRead"]!["x-enum-varnames"]!.ToJsonString());
     }
@@ -35,11 +43,15 @@ public class ConverterFailureTests
     [Fact]
     public async Task value_read_back_as_an_undeclared_member_yields_an_empty_name()
     {
+        // Given: a converter that reads each value as an undeclared member
+
+        // When: the document is generated
         var document = await TestApi.Document<UndeclaredResponse>(
             options => options.AddEnumDescriptions());
 
         var schema = document["components"]!["schemas"]!["UndeclaredOnRead"]!;
 
+        // Then: the value gets an empty name
         Assert.Equal("[\"\"]", schema["x-enum-varnames"]!.ToJsonString());
     }
 
