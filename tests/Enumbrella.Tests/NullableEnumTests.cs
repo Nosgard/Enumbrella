@@ -134,12 +134,9 @@ public class NullableEnumTests
     private static void AssertOneStatusComponent(JsonNode document)
     {
         var schemas = document["components"]!["schemas"]!.AsObject();
-        var names = "[\"Pending\",\"Approved\",\"Rejected\"]";
 
         Assert.Single(
             schemas, entry => entry.Key.StartsWith("OrderStatus", StringComparison.Ordinal));
-        Assert.Equal("[0,1,2]", schemas["OrderStatus"]!["enum"]!.ToJsonString());
-        Assert.Equal(names, schemas["OrderStatus"]!["x-enum-varnames"]!.ToJsonString());
-        Assert.Equal(names, schemas["OrderStatus"]!["x-enumNames"]!.ToJsonString());
+        TestApi.AssertStatusComponent(document);
     }
 }

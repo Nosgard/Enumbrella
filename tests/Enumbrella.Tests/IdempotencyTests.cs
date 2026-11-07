@@ -21,11 +21,9 @@ public class IdempotencyTests
             options => options.AddEnumDescriptions());
 
         var schemas = document["components"]!["schemas"]!.AsObject();
-        var names = "[\"Pending\",\"Approved\",\"Rejected\"]";
 
         Assert.Equal(
             ["OrderStatus", "TwoStatusesResponse"], schemas.Select(entry => entry.Key).Order());
-        Assert.Equal(names, schemas["OrderStatus"]!["x-enum-varnames"]!.ToJsonString());
-        Assert.Equal(names, schemas["OrderStatus"]!["x-enumNames"]!.ToJsonString());
+        TestApi.AssertStatusComponent(document);
     }
 }

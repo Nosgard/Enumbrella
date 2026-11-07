@@ -58,6 +58,16 @@ internal static class TestApi
         });
     }
 
+    public static void AssertStatusComponent(JsonNode document)
+    {
+        var schema = document["components"]!["schemas"]!["OrderStatus"]!;
+        var names = "[\"Pending\",\"Approved\",\"Rejected\"]";
+
+        Assert.Equal("[0,1,2]", schema["enum"]!.ToJsonString());
+        Assert.Equal(names, schema["x-enum-varnames"]!.ToJsonString());
+        Assert.Equal(names, schema["x-enumNames"]!.ToJsonString());
+    }
+
     private static string? InlineEnumReferenceId(JsonTypeInfo typeInfo)
     {
         var type = Nullable.GetUnderlyingType(typeInfo.Type) ?? typeInfo.Type;
