@@ -17,6 +17,18 @@ public class RegistrationTests
     }
 
     [Fact]
+    public async Task only_the_registered_host_writes_x_enum_extensions()
+    {
+        var registered = await SampleApi.Document();
+        var unregistered = await TestApi.Document<Order>(_ => { });
+
+        var registeredStatus = registered["components"]!["schemas"]!["OrderStatus"]!;
+
+        Assert.NotNull(registeredStatus["x-enum-varnames"]);
+        Assert.DoesNotContain("\"x-enum", unregistered.ToJsonString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void AddEnumDescriptions_throws_on_null_options()
     {
         Assert.Throws<ArgumentNullException>(
