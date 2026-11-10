@@ -76,13 +76,16 @@ internal static class TestApi
         app.MapGet("/plain", () => default(OrderStatus));
     }
 
-    public static Task<JsonNode> InlineEnumDocument<TResponse>(Action<OpenApiOptions> configure)
+    public static Task<JsonNode> InlineEnumDocument<TResponse>(
+        Action<OpenApiOptions> configure, Action<JsonSerializerOptions>? configureJson = null)
     {
-        return Document<TResponse>(options =>
-        {
-            options.CreateSchemaReferenceId = InlineEnumReferenceId;
-            configure(options);
-        });
+        return Document<TResponse>(
+            options =>
+            {
+                options.CreateSchemaReferenceId = InlineEnumReferenceId;
+                configure(options);
+            },
+            configureJson);
     }
 
     public static Task WriteUnreadableStatusEntry(

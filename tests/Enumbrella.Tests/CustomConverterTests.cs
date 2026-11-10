@@ -14,7 +14,7 @@ public class CustomConverterTests
     [Fact]
     public async Task custom_converters_on_the_type_and_in_the_options_keep_the_shared_schema()
     {
-        // Given: one enum with a converter on its type and one with a converter in the options
+        // Given: enums with a converter on the type and in the options, the latter also nullable
 
         // When: the document is generated with and without the registration
         var registered = await TestApi.Document<ConvertedResponse>(Register, AddOptionsConverter);
@@ -101,6 +101,24 @@ public class CustomConverterTests
         Assert.Equal(0, CountingConverter<ByType>.Calls);
     }
 
+    [Fact]
+    public async Task custom_converters_on_the_type_and_in_the_options_keep_the_inline_schema()
+    {
+        // Given: plain enums with converters on the type and in the options, and a nullable one
+        // in a host that keeps enums inline
+
+        // When: the document is generated with and without the registration
+        var registered = await TestApi.InlineEnumDocument<TypeAndOptionsResponse>(
+            Register, AddOptionsConverter);
+        var unregistered = await TestApi.InlineEnumDocument<TypeAndOptionsResponse>(
+            _ => { }, AddOptionsConverter);
+
+        // Then: both documents match and neither converter ran
+        Assert.Equal(unregistered.ToJsonString(), registered.ToJsonString());
+        Assert.Equal(0, CountingConverter<ByType>.Calls);
+        Assert.Equal(0, CountingConverter<ByOptions>.Calls);
+    }
+
     private static void AddOptionsConverter(JsonSerializerOptions options)
     {
         options.Converters.Add(new CountingConverter<ByOptions>());
@@ -130,13 +148,16 @@ public class CustomConverterTests
     }
 
     internal sealed record ConvertedResponse(
-        ByType ByType, ByOptions ByOptions, OrderStatus Status, Shade Shade);
+        ByType ByType, ByOptions ByOptions, ByOptions? Optional, OrderStatus Status, Shade Shade);
 
     internal sealed record PropertyConvertedResponse(
         [property: JsonConverter(typeof(CountingConverter<OrderStatus>))] OrderStatus Plain,
         [property: JsonConverter(typeof(CountingConverter<OrderStatus>))] OrderStatus? Optional);
 
     internal sealed record NullableConvertedResponse(ByType? Value);
+
+    internal sealed record TypeAndOptionsResponse(
+        ByType ByType, ByOptions ByOptions, ByOptions? Optional);
 
     // Counts every call and throws, so a test sees both a call and a failing document.
     private sealed class CountingConverter<TEnum> : JsonConverter<TEnum>
