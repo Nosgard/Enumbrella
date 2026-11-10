@@ -22,17 +22,34 @@ internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
         OpenApiSchemaTransformerContext context,
         CancellationToken cancellationToken)
     {
-        var typeInfo = context.JsonTypeInfo;
-        var enumType = Nullable.GetUnderlyingType(typeInfo.Type) ?? typeInfo.Type;
+        var type = context.JsonTypeInfo.Type;
+        var enumType = Nullable.GetUnderlyingType(type) ?? type;
 
         if (!enumType.IsEnum || schema is { Enum: null, Type: null })
         {
             return Task.CompletedTask;
         }
 
-        DescribeValues(schema, typeInfo, enumType);
+        DescribeValues(schema, ResolveTypeInfo(context), enumType);
 
         return Task.CompletedTask;
+    }
+
+    // A converter on the property decides how its values read and write. It goes into a copy of
+    // the options, so the application's options stay as they are.
+    private static JsonTypeInfo ResolveTypeInfo(OpenApiSchemaTransformerContext context)
+    {
+        var converter = context.JsonPropertyInfo?.CustomConverter;
+
+        if (converter is null)
+        {
+            return context.JsonTypeInfo;
+        }
+
+        var options = new JsonSerializerOptions(context.JsonTypeInfo.Options);
+        options.Converters.Insert(0, converter);
+
+        return options.GetTypeInfo(context.JsonTypeInfo.Type);
     }
 
     private static void DescribeValues(OpenApiSchema schema, JsonTypeInfo typeInfo, Type enumType)

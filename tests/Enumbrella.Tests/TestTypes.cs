@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Enumbrella.Sample;
 
 namespace Enumbrella.Tests;
@@ -46,3 +47,7 @@ internal sealed record NullableStatusResponse(OrderStatus? Status);
 internal sealed record NullableFirstResponse(OrderStatus? First, OrderStatus Second);
 
 internal sealed record PlainFirstResponse(OrderStatus First, OrderStatus? Second);
+
+internal sealed record StringPropertyResponse(
+    [property: JsonConverter(typeof(JsonStringEnumConverter))] OrderStatus Plain,
+    [property: JsonConverter(typeof(JsonStringEnumConverter))] OrderStatus? Optional);
