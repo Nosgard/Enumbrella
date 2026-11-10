@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using Enumbrella.Sample;
 
 namespace Enumbrella.Tests;
 
@@ -43,6 +44,22 @@ public class ConverterFailureTests
 
         // Then: the schema gets no value list and no name list
         AssertUntouched(document, "UndeclaredOnRead");
+    }
+
+    [Fact]
+    public async Task unreadable_entry_from_another_transformer_gets_an_empty_name()
+    {
+        // Given: a schema transformer that writes an unreadable entry before the registration
+
+        // When: the document is generated
+        var document = await TestApi.Document<Order>(options => options
+            .AddSchemaTransformer(TestApi.WriteUnreadableStatusEntry)
+            .AddEnumDescriptions());
+
+        // Then: the unreadable entry gets an empty name and the readable one keeps its name
+        var schema = document["components"]!["schemas"]!["OrderStatus"]!;
+
+        Assert.Equal("[\"\",\"Pending\"]", schema["x-enum-varnames"]!.ToJsonString());
     }
 
     private static void AssertUntouched(JsonNode document, params string[] names)

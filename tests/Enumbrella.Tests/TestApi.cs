@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.OpenApi;
 
 namespace Enumbrella.Tests;
 
@@ -82,6 +83,17 @@ internal static class TestApi
             options.CreateSchemaReferenceId = InlineEnumReferenceId;
             configure(options);
         });
+    }
+
+    public static Task WriteUnreadableStatusEntry(
+        OpenApiSchema schema, OpenApiSchemaTransformerContext context, CancellationToken token)
+    {
+        if (context.JsonTypeInfo.Type == typeof(OrderStatus))
+        {
+            schema.Enum = [JsonValue.Create("unknown"), JsonValue.Create(0)];
+        }
+
+        return Task.CompletedTask;
     }
 
     public static void AssertStatusComponent(JsonNode document)

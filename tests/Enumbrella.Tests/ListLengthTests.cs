@@ -18,7 +18,7 @@ public class ListLengthTests
         var enumSchemas = EnumSchemas(await Documents());
 
         // Then: each name list is as long as enum and both name lists match
-        Assert.Equal(18, enumSchemas.Count);
+        Assert.Equal(19, enumSchemas.Count);
         Assert.All(enumSchemas, schema =>
         {
             var count = schema["enum"]!.AsArray().Count;
@@ -31,6 +31,11 @@ public class ListLengthTests
 
     private static async Task<JsonNode[]> Documents()
     {
+        return [.. await StandardDocuments(), .. await SpecialHostDocuments()];
+    }
+
+    private static async Task<JsonNode[]> StandardDocuments()
+    {
         return
         [
             await SampleApi.Document(),
@@ -40,14 +45,24 @@ public class ListLengthTests
             await TestApi.Document<LevelResponse>(Register),
             await TestApi.Document<DistanceResponse>(Register),
             await TestApi.Document<NullableStatusResponse>(Register),
-            await TestApi.InlineEnumDocument<NullableStatusResponse>(Register),
-            await TestApi.InlineEnumDocument<StringPropertyResponse>(Register),
             await TestApi.Document<ScopeResponse>(Register),
             await TestApi.Document<TwoStatusesResponse>(Register),
             await TestApi.Document<NullableFirstResponse>(Register),
             await TestApi.Document<PlainFirstResponse>(Register),
             await TestApi.Document<StringFirstResponse>(Register),
             await TestApi.Document<NumberFirstResponse>(Register),
+        ];
+    }
+
+    private static async Task<JsonNode[]> SpecialHostDocuments()
+    {
+        return
+        [
+            await TestApi.Document<Order>(options => options
+                .AddSchemaTransformer(TestApi.WriteUnreadableStatusEntry)
+                .AddEnumDescriptions()),
+            await TestApi.InlineEnumDocument<NullableStatusResponse>(Register),
+            await TestApi.InlineEnumDocument<StringPropertyResponse>(Register),
             await TestApi.EndpointDocument(TestApi.MapNullableStatus, TestApi.MapPlainStatus),
             await TestApi.EndpointDocument(TestApi.MapPlainStatus, TestApi.MapNullableStatus),
         ];
