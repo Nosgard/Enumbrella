@@ -1,7 +1,6 @@
 using System.Text.Json.Nodes;
 using Enumbrella.Sample;
 using Microsoft.AspNetCore.OpenApi;
-using static Enumbrella.Tests.NullableEnumTests;
 
 namespace Enumbrella.Tests;
 
@@ -48,8 +47,8 @@ public class ListLengthTests
             await TestApi.Document<TwoStatusesResponse>(Register),
             await TestApi.Document<NullableFirstResponse>(Register),
             await TestApi.Document<PlainFirstResponse>(Register),
-            await EndpointDocument(MapNullableStatus, MapPlainStatus),
-            await EndpointDocument(MapPlainStatus, MapNullableStatus),
+            await TestApi.EndpointDocument(TestApi.MapNullableStatus, TestApi.MapPlainStatus),
+            await TestApi.EndpointDocument(TestApi.MapPlainStatus, TestApi.MapNullableStatus),
         ];
     }
 

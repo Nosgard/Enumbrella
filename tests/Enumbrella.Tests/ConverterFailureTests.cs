@@ -9,7 +9,7 @@ public class ConverterFailureTests
     public async Task schema_stays_untouched_when_the_converter_cannot_write_values()
     {
         // Given: two enums whose converters throw on every write
-        string[] names = ["FailsOnWrite", "RejectedOnWrite"];
+        string[] names = ["UnsupportedOnWrite", "RejectedOnWrite"];
 
         // When: the document is generated
         var document = await TestApi.Document<UnwritableResponse>(
@@ -35,7 +35,7 @@ public class ConverterFailureTests
 
         var schemas = document["components"]!["schemas"]!;
 
-        // Then: each value stays listed with an empty name
+        // Then: each value gets an empty name
         Assert.Equal("[\"\"]", schemas["RejectedOnRead"]!["x-enum-varnames"]!.ToJsonString());
         Assert.Equal("[\"\"]", schemas["UnsupportedOnRead"]!["x-enum-varnames"]!.ToJsonString());
     }
@@ -55,8 +55,8 @@ public class ConverterFailureTests
         Assert.Equal("[\"\"]", schema["x-enum-varnames"]!.ToJsonString());
     }
 
-    [JsonConverter(typeof(ThrowOnWriteConverter))]
-    internal enum FailsOnWrite
+    [JsonConverter(typeof(UnsupportedWriteConverter))]
+    internal enum UnsupportedOnWrite
     {
         One = 1,
     }
@@ -85,7 +85,8 @@ public class ConverterFailureTests
         One = 1,
     }
 
-    internal sealed record UnwritableResponse(FailsOnWrite Value, RejectedOnWrite Rejected);
+    internal sealed record UnwritableResponse(
+        UnsupportedOnWrite Unsupported, RejectedOnWrite Rejected);
 
     internal sealed record UnreadableResponse(
         RejectedOnRead Rejected, UnsupportedOnRead Unsupported);
@@ -122,16 +123,16 @@ public class ConverterFailureTests
         }
     }
 
-    private sealed class ThrowOnWriteConverter : JsonConverter<FailsOnWrite>
+    private sealed class UnsupportedWriteConverter : JsonConverter<UnsupportedOnWrite>
     {
-        public override FailsOnWrite Read(
+        public override UnsupportedOnWrite Read(
             ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            return (FailsOnWrite)reader.GetInt32();
+            return (UnsupportedOnWrite)reader.GetInt32();
         }
 
         public override void Write(
-            Utf8JsonWriter writer, FailsOnWrite value, JsonSerializerOptions options)
+            Utf8JsonWriter writer, UnsupportedOnWrite value, JsonSerializerOptions options)
         {
             throw new NotSupportedException();
         }

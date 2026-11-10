@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
+using Enumbrella.Sample;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.AspNetCore.TestHost;
@@ -47,6 +48,25 @@ internal static class TestApi
     public static void MapResponse<TResponse>(WebApplication app)
     {
         app.MapGet("/", () => default(TResponse)!);
+    }
+
+    public static async Task<JsonNode> EndpointDocument(params Action<WebApplication>[] endpoints)
+    {
+        await using var app = await Start(
+            host => Array.ForEach(endpoints, map => map(host)),
+            ("v1", options => options.AddEnumDescriptions()));
+
+        return await Fetch(app, "v1");
+    }
+
+    public static void MapNullableStatus(WebApplication app)
+    {
+        app.MapGet("/nullable", () => default(OrderStatus?));
+    }
+
+    public static void MapPlainStatus(WebApplication app)
+    {
+        app.MapGet("/plain", () => default(OrderStatus));
     }
 
     public static Task<JsonNode> InlineEnumDocument<TResponse>(Action<OpenApiOptions> configure)

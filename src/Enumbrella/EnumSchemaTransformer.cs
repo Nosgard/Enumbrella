@@ -10,7 +10,8 @@ namespace Enumbrella;
 // Writes the value list and the member names of an enum into its schema. A missing value list
 // is filled in ascending numeric order, and a value declared twice keeps its first member's name.
 // The list filled in here ends with null when the schema type allows null, with an empty name.
-// An enum whose converter cannot write its values stays untouched. Holds no state between calls.
+// If writing a missing value list throws a JsonException or NotSupportedException, the schema
+// stays untouched. Holds no state between calls.
 internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
 {
     private const string VarNamesExtension = "x-enum-varnames";
@@ -29,18 +30,24 @@ internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
             return Task.CompletedTask;
         }
 
+        DescribeValues(schema, typeInfo, enumType);
+
+        return Task.CompletedTask;
+    }
+
+    private static void DescribeValues(OpenApiSchema schema, JsonTypeInfo typeInfo, Type enumType)
+    {
         var namesByValue = MapNamesByValue(enumType);
-        var values = schema.Enum ?? SerializeSortedValues(namesByValue.Keys, typeInfo, schema);
+        var appendNull = schema.Type?.HasFlag(JsonSchemaType.Null) == true;
+        var values = schema.Enum ?? SerializeSortedValues(namesByValue.Keys, typeInfo, appendNull);
 
         if (values is null)
         {
-            return Task.CompletedTask;
+            return;
         }
 
         schema.Enum = values;
         WriteNames(schema, values.Select(value => NameOf(value, typeInfo, namesByValue)).ToList());
-
-        return Task.CompletedTask;
     }
 
     private static Dictionary<object, string> MapNamesByValue(Type type)
@@ -56,7 +63,7 @@ internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
     }
 
     private static List<JsonNode>? SerializeSortedValues(
-        IEnumerable<object> values, JsonTypeInfo typeInfo, OpenApiSchema schema)
+        IEnumerable<object> values, JsonTypeInfo typeInfo, bool appendNull)
     {
         try
         {
@@ -64,13 +71,9 @@ internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
                 .Select(value => JsonSerializer.SerializeToNode(value, typeInfo)!)
                 .ToList();
 
-            return schema.Type?.HasFlag(JsonSchemaType.Null) == true ? [.. nodes, null!] : nodes;
+            return appendNull ? [.. nodes, null!] : nodes;
         }
-        catch (JsonException)
-        {
-            return null;
-        }
-        catch (NotSupportedException)
+        catch (Exception e) when (e is JsonException or NotSupportedException)
         {
             return null;
         }
@@ -90,11 +93,7 @@ internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
 
             return value is null ? "" : namesByValue.GetValueOrDefault(value, "");
         }
-        catch (JsonException)
-        {
-            return "";
-        }
-        catch (NotSupportedException)
+        catch (Exception e) when (e is JsonException or NotSupportedException)
         {
             return "";
         }
