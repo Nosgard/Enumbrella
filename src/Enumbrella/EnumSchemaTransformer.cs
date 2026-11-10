@@ -10,8 +10,8 @@ namespace Enumbrella;
 // Writes the value list and the member names of an enum into its schema. A missing value list
 // is filled in ascending numeric order, and a value declared twice keeps its first member's name.
 // The list filled in here ends with null when the schema type allows null, with an empty name.
-// If writing a missing value list throws a JsonException or NotSupportedException, the schema
-// stays untouched. Holds no state between calls.
+// The host writes neither values nor a type for an enum with a custom converter. The transformer
+// leaves such a schema untouched and never calls that converter. Holds no state between calls.
 internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
 {
     private const string VarNamesExtension = "x-enum-varnames";
@@ -25,7 +25,7 @@ internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
         var typeInfo = context.JsonTypeInfo;
         var enumType = Nullable.GetUnderlyingType(typeInfo.Type) ?? typeInfo.Type;
 
-        if (!enumType.IsEnum)
+        if (!enumType.IsEnum || schema is { Enum: null, Type: null })
         {
             return Task.CompletedTask;
         }

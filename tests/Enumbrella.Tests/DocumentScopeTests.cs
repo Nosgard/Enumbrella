@@ -59,6 +59,7 @@ public class DocumentScopeTests
         Action<OpenApiOptions> withoutRegistration = _ => { };
 
         return TestApi.Start(
+            configureJson: null,
             TestApi.MapResponse<ScopeResponse>,
             ("v1", options => options.AddEnumDescriptions()),
             ("v2", withoutRegistration));

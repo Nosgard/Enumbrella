@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
 using Enumbrella.Sample;
@@ -10,19 +11,23 @@ namespace Enumbrella.Tests;
 
 internal static class TestApi
 {
-    public static async Task<JsonNode> Document<TResponse>(Action<OpenApiOptions> configure)
+    public static async Task<JsonNode> Document<TResponse>(
+        Action<OpenApiOptions> configure, Action<JsonSerializerOptions>? configureJson = null)
     {
-        await using var app = await Start(MapResponse<TResponse>, ("v1", configure));
+        await using var app = await Start(configureJson, MapResponse<TResponse>, ("v1", configure));
 
         return await Fetch(app, "v1");
     }
 
     public static async Task<WebApplication> Start(
+        Action<JsonSerializerOptions>? configureJson,
         Action<WebApplication> mapEndpoints,
         params (string Name, Action<OpenApiOptions> Configure)[] documents)
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
+        builder.Services.ConfigureHttpJsonOptions(
+            json => configureJson?.Invoke(json.SerializerOptions));
 
         foreach (var (name, configure) in documents)
         {
@@ -53,6 +58,7 @@ internal static class TestApi
     public static async Task<JsonNode> EndpointDocument(params Action<WebApplication>[] endpoints)
     {
         await using var app = await Start(
+            configureJson: null,
             host => Array.ForEach(endpoints, map => map(host)),
             ("v1", options => options.AddEnumDescriptions()));
 
