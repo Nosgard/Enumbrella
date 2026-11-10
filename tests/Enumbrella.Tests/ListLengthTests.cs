@@ -18,7 +18,7 @@ public class ListLengthTests
         var enumSchemas = EnumSchemas(await Documents());
 
         // Then: each name list is as long as enum and both name lists match
-        Assert.Equal(16, enumSchemas.Count);
+        Assert.Equal(18, enumSchemas.Count);
         Assert.All(enumSchemas, schema =>
         {
             var count = schema["enum"]!.AsArray().Count;
@@ -46,6 +46,8 @@ public class ListLengthTests
             await TestApi.Document<TwoStatusesResponse>(Register),
             await TestApi.Document<NullableFirstResponse>(Register),
             await TestApi.Document<PlainFirstResponse>(Register),
+            await TestApi.Document<StringFirstResponse>(Register),
+            await TestApi.Document<NumberFirstResponse>(Register),
             await TestApi.EndpointDocument(TestApi.MapNullableStatus, TestApi.MapPlainStatus),
             await TestApi.EndpointDocument(TestApi.MapPlainStatus, TestApi.MapNullableStatus),
         ];

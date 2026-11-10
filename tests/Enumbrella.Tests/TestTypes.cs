@@ -51,3 +51,11 @@ internal sealed record PlainFirstResponse(OrderStatus First, OrderStatus? Second
 internal sealed record StringPropertyResponse(
     [property: JsonConverter(typeof(JsonStringEnumConverter))] OrderStatus Plain,
     [property: JsonConverter(typeof(JsonStringEnumConverter))] OrderStatus? Optional);
+
+internal sealed record StringFirstResponse(
+    [property: JsonConverter(typeof(JsonStringEnumConverter))] OrderStatus First,
+    OrderStatus Second);
+
+internal sealed record NumberFirstResponse(
+    OrderStatus First,
+    [property: JsonConverter(typeof(JsonStringEnumConverter))] OrderStatus Second);
