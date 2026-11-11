@@ -10,7 +10,7 @@ public class ListLengthTests
         options => options.AddEnumDescriptions();
 
     [Fact]
-    public async Task every_enum_schema_has_equal_name_lists_as_long_as_enum()
+    public async Task AddEnumDescriptions_EveryEnumSchema_HasEqualNameListsAsLongAsEnum()
     {
         // Given: the documents of the sample API and of each test API
 

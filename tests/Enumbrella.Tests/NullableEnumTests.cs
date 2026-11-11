@@ -6,7 +6,7 @@ namespace Enumbrella.Tests;
 public class NullableEnumTests
 {
     [Fact]
-    public async Task nullable_property_alone_lists_values_on_the_component()
+    public async Task AddEnumDescriptions_NullablePropertyAlone_ListsValuesOnComponent()
     {
         // Given: a nullable property as the only use of OrderStatus
 
@@ -19,7 +19,7 @@ public class NullableEnumTests
     }
 
     [Fact]
-    public async Task nullable_property_keeps_its_oneOf_with_and_without_registration()
+    public async Task AddEnumDescriptions_NullablePropertyWithAndWithoutRegistration_KeepsItsOneOf()
     {
         // Given: one host with the registration and one without
 
@@ -36,7 +36,7 @@ public class NullableEnumTests
     }
 
     [Fact]
-    public async Task inline_nullable_enum_ends_its_values_with_null()
+    public async Task AddEnumDescriptions_InlineNullableEnum_EndsItsValuesWithNull()
     {
         // Given: a nullable enum that stays inline
 
@@ -49,7 +49,7 @@ public class NullableEnumTests
     }
 
     [Fact]
-    public async Task inline_nullable_enum_has_an_empty_name_for_null()
+    public async Task AddEnumDescriptions_InlineNullableEnum_HasEmptyNameForNull()
     {
         // Given: a nullable enum that stays inline
 
@@ -66,7 +66,7 @@ public class NullableEnumTests
     }
 
     [Fact]
-    public async Task inline_nullable_type_stays_as_the_host_wrote_it()
+    public async Task AddEnumDescriptions_InlineNullableType_StaysAsHostWroteIt()
     {
         // Given: inline enums in one host with the registration and one without
 
@@ -83,7 +83,7 @@ public class NullableEnumTests
     }
 
     [Fact]
-    public async Task registering_twice_keeps_one_null_in_an_inline_enum()
+    public async Task AddEnumDescriptions_InlineNullableEnumRegisteredTwice_KeepsOneNull()
     {
         // Given: inline enums in one host registering once and one twice
 
@@ -99,7 +99,7 @@ public class NullableEnumTests
     }
 
     [Fact]
-    public async Task one_component_when_the_nullable_property_comes_first()
+    public async Task AddEnumDescriptions_NullablePropertyComesFirst_YieldsOneComponent()
     {
         // Given: a nullable property declared before a plain one of the same enum
 
@@ -112,7 +112,7 @@ public class NullableEnumTests
     }
 
     [Fact]
-    public async Task one_component_when_the_nullable_property_comes_last()
+    public async Task AddEnumDescriptions_NullablePropertyComesLast_YieldsOneComponent()
     {
         // Given: a plain property declared before a nullable one of the same enum
 
@@ -125,7 +125,7 @@ public class NullableEnumTests
     }
 
     [Fact]
-    public async Task one_component_when_the_nullable_endpoint_comes_first()
+    public async Task AddEnumDescriptions_NullableEndpointComesFirst_YieldsOneComponent()
     {
         // Given: a nullable endpoint mapped before a plain one
 
@@ -138,7 +138,7 @@ public class NullableEnumTests
     }
 
     [Fact]
-    public async Task one_component_when_the_nullable_endpoint_comes_last()
+    public async Task AddEnumDescriptions_NullableEndpointComesLast_YieldsOneComponent()
     {
         // Given: a plain endpoint mapped before a nullable one
 
