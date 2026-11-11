@@ -105,6 +105,18 @@ public class DescriptionTests
             schema["x-enum-descriptions"]!.ToJsonString());
     }
 
+    [Fact]
+    public async Task AddEnumDescriptions_OnlyDerivedAttribute_WritesDescriptions()
+    {
+        // Given: Localized has a derived description attribute on Card and no exact one anywhere
+
+        // When: the document is generated
+        var schema = await Schema<LabelledResponse>("Localized");
+
+        // Then: the description list exists and leaves Cash empty
+        Assert.Equal("[\"Translated card\",\"\"]", schema["x-enum-descriptions"]!.ToJsonString());
+    }
+
     private static async Task<JsonNode> Schema<TResponse>(string name)
     {
         var document = await TestApi.Document<TResponse>(options => options.AddEnumDescriptions());

@@ -76,6 +76,14 @@ internal enum Labelled
     NullText = 5,
 }
 
+internal enum Localized
+{
+    [Translated("card")]
+    Card = 1,
+
+    Cash = 2,
+}
+
 internal sealed class LabelAttribute(string text) : DescriptionAttribute(text);
 
 // Overrides Description the way attributes for translated texts do.
@@ -97,4 +105,4 @@ internal sealed record SwitchResponse(Switch Switch);
 
 internal sealed record ShippingAndChannelResponse(Shipping Shipping, Channel Channel);
 
-internal sealed record LabelledResponse(Labelled Labelled);
+internal sealed record LabelledResponse(Labelled Labelled, Localized Localized);
