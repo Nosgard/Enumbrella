@@ -5,7 +5,7 @@ namespace Enumbrella.Tests;
 public class ValueOrderTests
 {
     [Fact]
-    public async Task unsorted_declaration_yields_values_ascending_with_matching_names()
+    public async Task AddEnumDescriptions_UnsortedEnum_YieldsAscendingValuesWithMatchingNames()
     {
         // Given: an enum declared out of value order
 
@@ -18,7 +18,7 @@ public class ValueOrderTests
     }
 
     [Fact]
-    public async Task negative_values_come_first_with_matching_names()
+    public async Task AddEnumDescriptions_NegativeValues_ComeFirstWithMatchingNames()
     {
         // Given: an enum with negative values
 
@@ -32,7 +32,7 @@ public class ValueOrderTests
     }
 
     [Fact]
-    public async Task byte_enum_yields_its_values_with_matching_names()
+    public async Task AddEnumDescriptions_ByteEnum_YieldsItsValuesWithMatchingNames()
     {
         // Given: an enum based on byte
 
@@ -45,7 +45,7 @@ public class ValueOrderTests
     }
 
     [Fact]
-    public async Task long_enum_yields_values_beyond_int_range_with_matching_names()
+    public async Task AddEnumDescriptions_LongEnum_YieldsValuesBeyondIntRangeWithMatchingNames()
     {
         // Given: an enum based on long with a value beyond the int range
 

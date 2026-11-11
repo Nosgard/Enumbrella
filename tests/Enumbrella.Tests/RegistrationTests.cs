@@ -7,7 +7,7 @@ namespace Enumbrella.Tests;
 public class RegistrationTests
 {
     [Fact]
-    public async Task schema_of_OrderStatus_has_no_enum_without_registration()
+    public async Task AddEnumDescriptions_SchemaOfOrderStatusWithoutRegistration_HasNoEnum()
     {
         // Given: a host without the registration
 
@@ -21,7 +21,7 @@ public class RegistrationTests
     }
 
     [Fact]
-    public async Task only_the_registered_host_writes_x_enum_extensions()
+    public async Task AddEnumDescriptions_RegisteredAndUnregisteredHost_OnlyRegisteredWritesXEnum()
     {
         // Given: one host with the registration and one without
 
@@ -37,7 +37,7 @@ public class RegistrationTests
     }
 
     [Fact]
-    public void AddEnumDescriptions_throws_on_null_options()
+    public void AddEnumDescriptions_NullOptions_ThrowsArgumentNullException()
     {
         // Given: no options instance
 
@@ -49,7 +49,7 @@ public class RegistrationTests
     }
 
     [Fact]
-    public void AddEnumDescriptions_returns_the_same_options_instance()
+    public void AddEnumDescriptions_NewOptions_ReturnsSameOptionsInstance()
     {
         // Given: a new options instance
         var options = new OpenApiOptions();
@@ -62,7 +62,7 @@ public class RegistrationTests
     }
 
     [Fact]
-    public void assembly_exposes_exactly_one_public_type_with_one_public_method()
+    public void EnumbrellaOpenApiOptionsExtensions_Assembly_IsOnlyPublicTypeWithOnePublicMethod()
     {
         // Given: the package assembly
         var assembly = typeof(EnumbrellaOpenApiOptionsExtensions).Assembly;
@@ -79,7 +79,7 @@ public class RegistrationTests
     }
 
     [Fact]
-    public void assembly_contains_no_generated_openapi_types()
+    public void EnumbrellaOpenApiOptionsExtensions_Assembly_HoldsNoGeneratedOpenApiTypes()
     {
         // Given: the package assembly
         var assembly = typeof(EnumbrellaOpenApiOptionsExtensions).Assembly;

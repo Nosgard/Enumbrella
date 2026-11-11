@@ -3,7 +3,7 @@ namespace Enumbrella.Tests;
 public class SampleApiTests
 {
     [Fact]
-    public async Task OrderStatus_schema_lists_values_and_both_name_lists()
+    public async Task AddEnumDescriptions_SampleApi_OrderStatusSchemaListsValuesAndBothNameLists()
     {
         // Given: the sample API with its registration
 
