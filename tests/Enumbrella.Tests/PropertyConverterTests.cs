@@ -9,7 +9,7 @@ public class PropertyConverterTests
         options => options.AddEnumDescriptions();
 
     [Fact]
-    public async Task string_converter_on_a_property_names_each_string_value()
+    public async Task AddEnumDescriptions_StringConverterOnProperty_NamesEachStringValue()
     {
         // Given: a JsonStringEnumConverter on an inline OrderStatus property
 
@@ -26,7 +26,7 @@ public class PropertyConverterTests
     }
 
     [Fact]
-    public async Task string_converter_on_a_nullable_property_gives_null_an_empty_name()
+    public async Task AddEnumDescriptions_StringConverterOnNullableProperty_GivesNullEmptyName()
     {
         // Given: a JsonStringEnumConverter on an inline OrderStatus? property
 
@@ -44,7 +44,7 @@ public class PropertyConverterTests
     }
 
     [Fact]
-    public async Task string_property_first_adds_only_names_to_the_shared_component()
+    public async Task AddEnumDescriptions_StringPropertyFirst_AddsOnlyNamesToSharedComponent()
     {
         // Given: a property with the string converter declared before a plain one
 
@@ -62,7 +62,7 @@ public class PropertyConverterTests
     }
 
     [Fact]
-    public async Task plain_property_first_adds_only_values_and_names_to_the_shared_component()
+    public async Task AddEnumDescriptions_PlainPropertyFirst_AddsOnlyEnumAndNamesToSharedComponent()
     {
         // Given: a plain property declared before one with the string converter
 
