@@ -55,6 +55,40 @@ internal enum Channel
     Phone = 2,
 }
 
+internal enum Labelled
+{
+    [Description("A")]
+    [Label("first label")]
+    ExactFirst = 1,
+
+    [Label("second label")]
+    [Description("A")]
+    ExactLast = 2,
+
+    [Translated("only")]
+    DerivedOnly = 3,
+
+    [Label("one")]
+    [Translated("two")]
+    TwoDerived = 4,
+
+    [MissingText]
+    NullText = 5,
+}
+
+internal sealed class LabelAttribute(string text) : DescriptionAttribute(text);
+
+// Overrides Description the way attributes for translated texts do.
+internal sealed class TranslatedAttribute(string key) : DescriptionAttribute
+{
+    public override string Description => $"Translated {key}";
+}
+
+internal sealed class MissingTextAttribute : DescriptionAttribute
+{
+    public override string Description => null!;
+}
+
 internal sealed record StatusDescriptionsResponse(OrderStatus Status);
 
 internal sealed record SpecialTextResponse(SpecialText Text);
@@ -62,3 +96,5 @@ internal sealed record SpecialTextResponse(SpecialText Text);
 internal sealed record SwitchResponse(Switch Switch);
 
 internal sealed record ShippingAndChannelResponse(Shipping Shipping, Channel Channel);
+
+internal sealed record LabelledResponse(Labelled Labelled);

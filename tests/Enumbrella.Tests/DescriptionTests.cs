@@ -90,6 +90,21 @@ public class DescriptionTests
         Assert.Equal("[\"\",\"By phone\"]", schema["x-enum-descriptions"]!.ToJsonString());
     }
 
+    [Fact]
+    public async Task AddEnumDescriptions_SeveralDescriptionAttributes_PicksExactThenSingleDerived()
+    {
+        // Given: members with the exact attribute next to a derived one in both orders, one
+        // derived attribute alone, two derived ones and a derived one whose text is null
+
+        // When: the document is generated
+        var schema = await Schema<LabelledResponse>("Labelled");
+
+        // Then: the exact text wins, a single derived one counts, anything else stays empty
+        Assert.Equal(
+            "[\"A\",\"A\",\"Translated only\",\"\",\"\"]",
+            schema["x-enum-descriptions"]!.ToJsonString());
+    }
+
     private static async Task<JsonNode> Schema<TResponse>(string name)
     {
         var document = await TestApi.Document<TResponse>(options => options.AddEnumDescriptions());

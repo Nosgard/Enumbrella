@@ -19,7 +19,7 @@ public class ListLengthTests
         var enumSchemas = EnumSchemas(await Documents());
 
         // Then: each name and description list is as long as enum and both name lists match
-        Assert.Equal(25, enumSchemas.Count);
+        Assert.Equal(26, enumSchemas.Count);
         Assert.All(enumSchemas, schema =>
         {
             var count = schema["enum"]!.AsArray().Count;
@@ -37,7 +37,12 @@ public class ListLengthTests
 
     private static async Task<JsonNode[]> Documents()
     {
-        return [.. await StandardDocuments(), .. await SpecialHostDocuments()];
+        return
+        [
+            .. await StandardDocuments(),
+            .. await DescriptionDocuments(),
+            .. await SpecialHostDocuments(),
+        ];
     }
 
     private static async Task<JsonNode[]> StandardDocuments()
@@ -57,10 +62,18 @@ public class ListLengthTests
             await TestApi.Document<PlainFirstResponse>(Register),
             await TestApi.Document<StringFirstResponse>(Register),
             await TestApi.Document<NumberFirstResponse>(Register),
+        ];
+    }
+
+    private static async Task<JsonNode[]> DescriptionDocuments()
+    {
+        return
+        [
             await TestApi.Document<StatusDescriptionsResponse>(Register),
             await TestApi.Document<SpecialTextResponse>(Register),
             await TestApi.Document<SwitchResponse>(Register),
             await TestApi.Document<ShippingAndChannelResponse>(Register),
+            await TestApi.Document<LabelledResponse>(Register),
         ];
     }
 

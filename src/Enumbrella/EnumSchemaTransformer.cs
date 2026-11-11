@@ -83,14 +83,32 @@ internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
 
         foreach (var field in type.GetFields(BindingFlags.Public | BindingFlags.Static))
         {
-            var attribute = field.GetCustomAttribute<DescriptionAttribute>();
+            var description = DescriptionOf(field);
             var value = Enum.ToObject(type, field.GetRawConstantValue()!);
 
-            hasDescriptions |= attribute is not null;
-            members.TryAdd(value, (field.Name, attribute?.Description ?? ""));
+            hasDescriptions |= description is not null;
+            members.TryAdd(value, (field.Name, description ?? ""));
         }
 
         return (members, hasDescriptions);
+    }
+
+    // The exact DescriptionAttribute wins, else a single derived one; several derived ones give
+    // an empty text. Null means the field carries no description attribute at all.
+    private static string? DescriptionOf(FieldInfo field)
+    {
+        var attributes = field.GetCustomAttributes<DescriptionAttribute>().ToArray();
+
+        if (attributes.Length == 0)
+        {
+            return null;
+        }
+
+        var exact = attributes.FirstOrDefault(
+            attribute => attribute.GetType() == typeof(DescriptionAttribute));
+        var chosen = exact ?? (attributes.Length == 1 ? attributes[0] : null);
+
+        return chosen?.Description ?? "";
     }
 
     private static List<JsonNode>? SerializeSortedValues(
