@@ -6,8 +6,9 @@ namespace Enumbrella;
 public static class EnumbrellaOpenApiOptionsExtensions
 {
     /// <summary>
-    /// Adds the value list and the member names (<c>x-enum-varnames</c>, <c>x-enumNames</c>)
-    /// to the enum schemas of the document these options belong to.
+    /// Adds the value list, the member names (<c>x-enum-varnames</c>, <c>x-enumNames</c>) and,
+    /// when a member carries <see cref="System.ComponentModel.DescriptionAttribute"/>, the member
+    /// descriptions to the enum schemas of the document these options belong to.
     /// </summary>
     /// <param name="options">The options passed by <c>AddOpenApi</c>.</param>
     /// <returns>The same <paramref name="options"/> for further calls.</returns>
