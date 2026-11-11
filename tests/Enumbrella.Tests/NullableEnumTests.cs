@@ -1,6 +1,5 @@
 using System.Text.Json.Nodes;
 using Enumbrella.Sample;
-using Microsoft.AspNetCore.Builder;
 
 namespace Enumbrella.Tests;
 
@@ -131,7 +130,8 @@ public class NullableEnumTests
         // Given: a nullable endpoint mapped before a plain one
 
         // When: the document is generated
-        var document = await EndpointDocument(MapNullableStatus, MapPlainStatus);
+        var document = await TestApi.EndpointDocument(
+            TestApi.MapNullableStatus, TestApi.MapPlainStatus);
 
         // Then: both share one component whose values hold no null
         AssertOneStatusComponent(document);
@@ -143,29 +143,11 @@ public class NullableEnumTests
         // Given: a plain endpoint mapped before a nullable one
 
         // When: the document is generated
-        var document = await EndpointDocument(MapPlainStatus, MapNullableStatus);
+        var document = await TestApi.EndpointDocument(
+            TestApi.MapPlainStatus, TestApi.MapNullableStatus);
 
         // Then: both share one component whose values hold no null
         AssertOneStatusComponent(document);
-    }
-
-    internal static async Task<JsonNode> EndpointDocument(params Action<WebApplication>[] endpoints)
-    {
-        await using var app = await TestApi.Start(
-            host => Array.ForEach(endpoints, map => map(host)),
-            ("v1", options => options.AddEnumDescriptions()));
-
-        return await TestApi.Fetch(app, "v1");
-    }
-
-    internal static void MapNullableStatus(WebApplication app)
-    {
-        app.MapGet("/nullable", () => default(OrderStatus?));
-    }
-
-    internal static void MapPlainStatus(WebApplication app)
-    {
-        app.MapGet("/plain", () => default(OrderStatus));
     }
 
     private static JsonNode StatusProperty(JsonNode document)

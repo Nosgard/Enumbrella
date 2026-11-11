@@ -1,5 +1,7 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using Enumbrella.Sample;
 
 namespace Enumbrella.Tests;
 
@@ -9,23 +11,17 @@ public class ConverterFailureTests
     public async Task schema_stays_untouched_when_the_converter_cannot_write_values()
     {
         // Given: two enums whose converters throw on every write
-        string[] names = ["FailsOnWrite", "RejectedOnWrite"];
 
         // When: the document is generated
         var document = await TestApi.Document<UnwritableResponse>(
             options => options.AddEnumDescriptions());
 
-        var schemas = document["components"]!["schemas"]!;
-
         // Then: neither schema gets a value list or a name list
-        Assert.All(names, name => Assert.DoesNotContain(
-            schemas[name]!.AsObject(),
-            property => property.Key == "enum"
-                || property.Key.StartsWith("x-enum", StringComparison.Ordinal)));
+        AssertUntouched(document, "UnsupportedOnWrite", "RejectedOnWrite");
     }
 
     [Fact]
-    public async Task unreadable_values_yield_empty_names()
+    public async Task schema_stays_untouched_when_the_converter_cannot_read_values()
     {
         // Given: two enums whose converters throw on every read
 
@@ -33,15 +29,12 @@ public class ConverterFailureTests
         var document = await TestApi.Document<UnreadableResponse>(
             options => options.AddEnumDescriptions());
 
-        var schemas = document["components"]!["schemas"]!;
-
-        // Then: each value stays listed with an empty name
-        Assert.Equal("[\"\"]", schemas["RejectedOnRead"]!["x-enum-varnames"]!.ToJsonString());
-        Assert.Equal("[\"\"]", schemas["UnsupportedOnRead"]!["x-enum-varnames"]!.ToJsonString());
+        // Then: neither schema gets a value list or a name list
+        AssertUntouched(document, "RejectedOnRead", "UnsupportedOnRead");
     }
 
     [Fact]
-    public async Task value_read_back_as_an_undeclared_member_yields_an_empty_name()
+    public async Task schema_stays_untouched_when_the_converter_reads_an_undeclared_member()
     {
         // Given: a converter that reads each value as an undeclared member
 
@@ -49,14 +42,38 @@ public class ConverterFailureTests
         var document = await TestApi.Document<UndeclaredResponse>(
             options => options.AddEnumDescriptions());
 
-        var schema = document["components"]!["schemas"]!["UndeclaredOnRead"]!;
-
-        // Then: the value gets an empty name
-        Assert.Equal("[\"\"]", schema["x-enum-varnames"]!.ToJsonString());
+        // Then: the schema gets no value list and no name list
+        AssertUntouched(document, "UndeclaredOnRead");
     }
 
-    [JsonConverter(typeof(ThrowOnWriteConverter))]
-    internal enum FailsOnWrite
+    [Fact]
+    public async Task unreadable_entry_from_another_transformer_gets_an_empty_name()
+    {
+        // Given: a schema transformer that writes an unreadable entry before the registration
+
+        // When: the document is generated
+        var document = await TestApi.Document<Order>(options => options
+            .AddSchemaTransformer(TestApi.WriteUnreadableStatusEntry)
+            .AddEnumDescriptions());
+
+        // Then: the unreadable entry gets an empty name and the readable one keeps its name
+        var schema = document["components"]!["schemas"]!["OrderStatus"]!;
+
+        Assert.Equal("[\"\",\"Pending\"]", schema["x-enum-varnames"]!.ToJsonString());
+    }
+
+    private static void AssertUntouched(JsonNode document, params string[] names)
+    {
+        var schemas = document["components"]!["schemas"]!;
+
+        Assert.All(names, name => Assert.DoesNotContain(
+            schemas[name]!.AsObject(),
+            property => property.Key == "enum"
+                || property.Key.StartsWith("x-enum", StringComparison.Ordinal)));
+    }
+
+    [JsonConverter(typeof(UnsupportedWriteConverter))]
+    internal enum UnsupportedOnWrite
     {
         One = 1,
     }
@@ -85,7 +102,8 @@ public class ConverterFailureTests
         One = 1,
     }
 
-    internal sealed record UnwritableResponse(FailsOnWrite Value, RejectedOnWrite Rejected);
+    internal sealed record UnwritableResponse(
+        UnsupportedOnWrite Unsupported, RejectedOnWrite Rejected);
 
     internal sealed record UnreadableResponse(
         RejectedOnRead Rejected, UnsupportedOnRead Unsupported);
@@ -122,16 +140,16 @@ public class ConverterFailureTests
         }
     }
 
-    private sealed class ThrowOnWriteConverter : JsonConverter<FailsOnWrite>
+    private sealed class UnsupportedWriteConverter : JsonConverter<UnsupportedOnWrite>
     {
-        public override FailsOnWrite Read(
+        public override UnsupportedOnWrite Read(
             ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            return (FailsOnWrite)reader.GetInt32();
+            return (UnsupportedOnWrite)reader.GetInt32();
         }
 
         public override void Write(
-            Utf8JsonWriter writer, FailsOnWrite value, JsonSerializerOptions options)
+            Utf8JsonWriter writer, UnsupportedOnWrite value, JsonSerializerOptions options)
         {
             throw new NotSupportedException();
         }
