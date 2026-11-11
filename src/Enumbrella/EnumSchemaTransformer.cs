@@ -1,21 +1,26 @@
+using System.ComponentModel;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
+using Member = (string Name, string Description);
 
 namespace Enumbrella;
 
-// Writes the value list and the member names of an enum into its schema. A missing value list
-// is filled in ascending numeric order, and a value declared twice keeps its first member's name.
-// The list filled in here ends with null when the schema type allows null, with an empty name.
+// Writes the value list, the member names and, when any member carries [Description], the
+// descriptions of an enum into its schema. A member without one gets an empty description.
+// A missing value list is filled in ascending numeric order, and a value declared twice keeps
+// its first member's name and description. The list filled in here ends with null when the
+// schema type allows null, with an empty name and description.
 // The host writes neither values nor a type for an enum with a custom converter. The transformer
 // leaves such a schema untouched and never calls that converter. Holds no state between calls.
 internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
 {
     private const string VarNamesExtension = "x-enum-varnames";
     private const string EnumNamesExtension = "x-enumNames";
+    private const string DescriptionsExtension = "x-enum-descriptions";
 
     public Task TransformAsync(
         OpenApiSchema schema,
@@ -54,9 +59,9 @@ internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
 
     private static void DescribeValues(OpenApiSchema schema, JsonTypeInfo typeInfo, Type enumType)
     {
-        var namesByValue = MapNamesByValue(enumType);
+        var (byValue, hasDescriptions) = MapMembersByValue(enumType);
         var appendNull = schema.Type?.HasFlag(JsonSchemaType.Null) == true;
-        var values = schema.Enum ?? SerializeSortedValues(namesByValue.Keys, typeInfo, appendNull);
+        var values = schema.Enum ?? SerializeSortedValues(byValue.Keys, typeInfo, appendNull);
 
         if (values is null)
         {
@@ -64,19 +69,28 @@ internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
         }
 
         schema.Enum = values;
-        WriteNames(schema, values.Select(value => NameOf(value, typeInfo, namesByValue)).ToList());
+        var members = values.Select(value => MemberOf(value, typeInfo, byValue)).ToList();
+        WriteLists(schema, members, hasDescriptions);
     }
 
-    private static Dictionary<object, string> MapNamesByValue(Type type)
+    // The description list depends on the attribute on any member, also on a later one that
+    // shares its value with an earlier member and so never shows its own description.
+    private static (Dictionary<object, Member> Members, bool HasDescriptions) MapMembersByValue(
+        Type type)
     {
-        var names = new Dictionary<object, string>();
+        var members = new Dictionary<object, Member>();
+        var hasDescriptions = false;
 
         foreach (var field in type.GetFields(BindingFlags.Public | BindingFlags.Static))
         {
-            names.TryAdd(Enum.ToObject(type, field.GetRawConstantValue()!), field.Name);
+            var attribute = field.GetCustomAttribute<DescriptionAttribute>();
+            var value = Enum.ToObject(type, field.GetRawConstantValue()!);
+
+            hasDescriptions |= attribute is not null;
+            members.TryAdd(value, (field.Name, attribute?.Description ?? ""));
         }
 
-        return names;
+        return (members, hasDescriptions);
     }
 
     private static List<JsonNode>? SerializeSortedValues(
@@ -96,35 +110,44 @@ internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
         }
     }
 
-    private static string NameOf(
-        JsonNode? entry, JsonTypeInfo typeInfo, Dictionary<object, string> namesByValue)
+    private static Member MemberOf(
+        JsonNode? entry, JsonTypeInfo typeInfo, Dictionary<object, Member> membersByValue)
     {
         if (entry is null)
         {
-            return "";
+            return ("", "");
         }
 
         try
         {
             var value = JsonSerializer.Deserialize(entry, typeInfo);
 
-            return value is null ? "" : namesByValue.GetValueOrDefault(value, "");
+            return value is null ? ("", "") : membersByValue.GetValueOrDefault(value, ("", ""));
         }
         catch (Exception e) when (e is JsonException or NotSupportedException)
         {
-            return "";
+            return ("", "");
         }
     }
 
-    private static void WriteNames(OpenApiSchema schema, List<string> names)
+    private static void WriteLists(
+        OpenApiSchema schema, List<Member> members, bool hasDescriptions)
     {
+        var names = members.Select(member => member.Name).ToList();
+
         schema.Extensions ??= new Dictionary<string, IOpenApiExtension>();
         schema.Extensions[VarNamesExtension] = new JsonNodeExtension(ToJsonArray(names));
         schema.Extensions[EnumNamesExtension] = new JsonNodeExtension(ToJsonArray(names));
+
+        if (hasDescriptions)
+        {
+            var descriptions = ToJsonArray(members.Select(member => member.Description));
+            schema.Extensions[DescriptionsExtension] = new JsonNodeExtension(descriptions);
+        }
     }
 
-    private static JsonArray ToJsonArray(List<string> names)
+    private static JsonArray ToJsonArray(IEnumerable<string> texts)
     {
-        return new JsonArray(names.Select(name => (JsonNode?)JsonValue.Create(name)).ToArray());
+        return new JsonArray(texts.Select(text => (JsonNode?)JsonValue.Create(text)).ToArray());
     }
 }
