@@ -5,7 +5,7 @@ namespace Enumbrella.Tests;
 public class IdempotencyTests
 {
     [Fact]
-    public async Task registering_twice_yields_the_same_document()
+    public async Task AddEnumDescriptions_RegisteringTwice_YieldsSameDocument()
     {
         // Given: one host that registers once and one that registers twice
 
@@ -19,7 +19,7 @@ public class IdempotencyTests
     }
 
     [Fact]
-    public async Task an_enum_used_twice_yields_one_component_without_duplicate_names()
+    public async Task AddEnumDescriptions_EnumUsedTwice_YieldsOneComponentWithoutDuplicateNames()
     {
         // Given: a response with two properties of the same enum
 

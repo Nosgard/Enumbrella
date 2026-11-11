@@ -12,7 +12,7 @@ public class CustomConverterTests
         options => options.AddEnumDescriptions();
 
     [Fact]
-    public async Task custom_converters_on_the_type_and_in_the_options_keep_the_shared_schema()
+    public async Task AddEnumDescriptions_CustomConvertersOnTypeAndInOptions_KeepSharedSchema()
     {
         // Given: enums with a converter on the type and in the options, the latter also nullable
 
@@ -28,7 +28,7 @@ public class CustomConverterTests
     }
 
     [Fact]
-    public async Task built_in_converters_keep_their_lists_next_to_custom_converters()
+    public async Task AddEnumDescriptions_BuiltInNextToCustomConverters_ListValuesAndBothNameLists()
     {
         // Given: an integer enum and a string enum next to enums with custom converters
 
@@ -46,7 +46,7 @@ public class CustomConverterTests
     }
 
     [Fact]
-    public async Task custom_converters_on_properties_keep_the_shared_schema()
+    public async Task AddEnumDescriptions_CustomConvertersOnProperties_KeepSharedSchema()
     {
         // Given: an OrderStatus and an OrderStatus? property, both with a custom converter
 
@@ -60,7 +60,7 @@ public class CustomConverterTests
     }
 
     [Fact]
-    public async Task custom_converters_on_properties_keep_the_inline_schema()
+    public async Task AddEnumDescriptions_CustomConvertersOnProperties_KeepInlineSchema()
     {
         // Given: the same properties in a host that keeps enums inline
 
@@ -74,7 +74,7 @@ public class CustomConverterTests
     }
 
     [Fact]
-    public async Task nullable_enum_with_a_custom_converter_keeps_the_shared_schema()
+    public async Task AddEnumDescriptions_NullableEnumWithCustomConverter_KeepsSharedSchema()
     {
         // Given: a nullable enum whose type carries a custom converter
 
@@ -88,7 +88,7 @@ public class CustomConverterTests
     }
 
     [Fact]
-    public async Task nullable_enum_with_a_custom_converter_keeps_the_inline_schema()
+    public async Task AddEnumDescriptions_NullableEnumWithCustomConverter_KeepsInlineSchema()
     {
         // Given: the same nullable enum in a host that keeps enums inline
 
@@ -102,7 +102,7 @@ public class CustomConverterTests
     }
 
     [Fact]
-    public async Task custom_converters_on_the_type_and_in_the_options_keep_the_inline_schema()
+    public async Task AddEnumDescriptions_CustomConvertersOnTypeAndInOptions_KeepInlineSchema()
     {
         // Given: plain enums with converters on the type and in the options, and a nullable one
         // in a host that keeps enums inline

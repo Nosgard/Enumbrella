@@ -15,6 +15,6 @@ indent_size = 2
 dotnet_style_allow_statement_immediately_after_block_experimental = false
 dotnet_diagnostic.IDE2003.severity = warning
 
-# Test names read as sentences with underscores; CA1707 targets public API naming.
+# Test names follow Unit_Scenario_Expectation with underscores; CA1707 targets public API naming.
 [tests/**.cs]
 dotnet_diagnostic.CA1707.severity = none

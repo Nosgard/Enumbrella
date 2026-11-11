@@ -8,7 +8,7 @@ namespace Enumbrella.Tests;
 public class ConverterFailureTests
 {
     [Fact]
-    public async Task schema_stays_untouched_when_the_converter_cannot_write_values()
+    public async Task AddEnumDescriptions_ConverterCannotWriteValues_LeavesSchemaUntouched()
     {
         // Given: two enums whose converters throw on every write
 
@@ -21,7 +21,7 @@ public class ConverterFailureTests
     }
 
     [Fact]
-    public async Task schema_stays_untouched_when_the_converter_cannot_read_values()
+    public async Task AddEnumDescriptions_ConverterCannotReadValues_LeavesSchemaUntouched()
     {
         // Given: two enums whose converters throw on every read
 
@@ -34,7 +34,7 @@ public class ConverterFailureTests
     }
 
     [Fact]
-    public async Task schema_stays_untouched_when_the_converter_reads_an_undeclared_member()
+    public async Task AddEnumDescriptions_ConverterReadsUndeclaredMember_LeavesSchemaUntouched()
     {
         // Given: a converter that reads each value as an undeclared member
 
@@ -47,7 +47,7 @@ public class ConverterFailureTests
     }
 
     [Fact]
-    public async Task unreadable_entry_from_another_transformer_gets_an_empty_name()
+    public async Task AddEnumDescriptions_UnreadableEntryFromAnotherTransformer_GetsEmptyName()
     {
         // Given: a schema transformer that writes an unreadable entry before the registration
 

@@ -6,7 +6,7 @@ namespace Enumbrella.Tests;
 public class DocumentScopeTests
 {
     [Fact]
-    public async Task only_the_registered_document_carries_enum_extensions()
+    public async Task AddEnumDescriptions_OneOfTwoDocumentsRegistered_OnlyItCarriesEnumExtensions()
     {
         // Given: a host where v1 has the registration and v2 does not
         await using var app = await StartBothDocuments();
@@ -22,7 +22,7 @@ public class DocumentScopeTests
     }
 
     [Fact]
-    public async Task a_non_enum_schema_is_identical_in_both_documents()
+    public async Task AddEnumDescriptions_NonEnumSchema_IsIdenticalInBothDocuments()
     {
         // Given: a host where v1 has the registration and v2 does not
         await using var app = await StartBothDocuments();
@@ -38,7 +38,7 @@ public class DocumentScopeTests
     }
 
     [Fact]
-    public async Task parallel_fetches_keep_the_documents_apart()
+    public async Task AddEnumDescriptions_ParallelFetches_KeepDocumentsApart()
     {
         // Given: a host where v1 has the registration and v2 does not
         await using var app = await StartBothDocuments();
