@@ -63,6 +63,33 @@ public class DescriptionTests
         Assert.Equal("[\"\",\"\"]", schema["x-enum-descriptions"]!.ToJsonString());
     }
 
+    [Fact]
+    public async Task AddEnumDescriptions_UnsortedDescribedEnum_OrdersDescriptionsLikeEnum()
+    {
+        // Given: Shipping declares Express = 3 before Standard = 1 and Pickup = 2
+
+        // When: the document is generated
+        var schema = await Schema<ShippingAndChannelResponse>("Shipping");
+
+        // Then: each description stands at the position of its value in enum
+        Assert.Equal("[1,2,3]", schema["enum"]!.ToJsonString());
+        Assert.Equal(
+            "[\"Standard delivery\",\"Pickup\",\"Express delivery\"]",
+            schema["x-enum-descriptions"]!.ToJsonString());
+    }
+
+    [Fact]
+    public async Task AddEnumDescriptions_DescriptionAttributeWithNull_WritesEmptyDescription()
+    {
+        // Given: Mail carries [Description(null)] and Phone a text
+
+        // When: the document is generated
+        var schema = await Schema<ShippingAndChannelResponse>("Channel");
+
+        // Then: the null description becomes an empty string
+        Assert.Equal("[\"\",\"By phone\"]", schema["x-enum-descriptions"]!.ToJsonString());
+    }
+
     private static async Task<JsonNode> Schema<TResponse>(string name)
     {
         var document = await TestApi.Document<TResponse>(options => options.AddEnumDescriptions());

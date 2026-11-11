@@ -19,7 +19,7 @@ public class ListLengthTests
         var enumSchemas = EnumSchemas(await Documents());
 
         // Then: each name and description list is as long as enum and both name lists match
-        Assert.Equal(23, enumSchemas.Count);
+        Assert.Equal(25, enumSchemas.Count);
         Assert.All(enumSchemas, schema =>
         {
             var count = schema["enum"]!.AsArray().Count;
@@ -60,6 +60,7 @@ public class ListLengthTests
             await TestApi.Document<StatusDescriptionsResponse>(Register),
             await TestApi.Document<SpecialTextResponse>(Register),
             await TestApi.Document<SwitchResponse>(Register),
+            await TestApi.Document<ShippingAndChannelResponse>(Register),
         ];
     }
 

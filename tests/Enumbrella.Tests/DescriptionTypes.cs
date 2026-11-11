@@ -34,8 +34,31 @@ internal enum Switch
     Disabled = 2,
 }
 
+internal enum Shipping
+{
+    [Description("Express delivery")]
+    Express = 3,
+
+    [Description("Standard delivery")]
+    Standard = 1,
+
+    [Description("Pickup")]
+    Pickup = 2,
+}
+
+internal enum Channel
+{
+    [Description(null!)]
+    Mail = 1,
+
+    [Description("By phone")]
+    Phone = 2,
+}
+
 internal sealed record StatusDescriptionsResponse(OrderStatus Status);
 
 internal sealed record SpecialTextResponse(SpecialText Text);
 
 internal sealed record SwitchResponse(Switch Switch);
+
+internal sealed record ShippingAndChannelResponse(Shipping Shipping, Channel Channel);
