@@ -18,7 +18,7 @@ public class ListLengthTests
         var enumSchemas = EnumSchemas(await Documents());
 
         // Then: each name list is as long as enum and both name lists match
-        Assert.Equal(19, enumSchemas.Count);
+        Assert.Equal(20, enumSchemas.Count);
         Assert.All(enumSchemas, schema =>
         {
             var count = schema["enum"]!.AsArray().Count;
