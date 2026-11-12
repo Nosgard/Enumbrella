@@ -6,9 +6,10 @@ public class SampleApiTests
     public async Task AddEnumDescriptions_SampleApi_OrderStatusSchemaListsValuesAndBothNameLists()
     {
         // Given: the sample API with its registration
+        await using var sampleApi = SampleApi.Start();
 
         // When: the document is generated
-        var document = await SampleApi.Document();
+        var document = await SampleApi.Fetch(sampleApi);
 
         // Then: OrderStatus lists its values and both name lists
         TestApi.AssertStatusComponent(document);
@@ -18,9 +19,10 @@ public class SampleApiTests
     public async Task AddEnumDescriptions_SampleApi_PaymentMethodListsStringsNamesAndDescriptions()
     {
         // Given: the sample API, which writes PaymentMethod as camelCase strings
+        await using var sampleApi = SampleApi.Start();
 
         // When: the document is generated
-        var document = await SampleApi.Document();
+        var document = await SampleApi.Fetch(sampleApi);
 
         // Then: each string has its C# name and its description at the same position
         var schema = document["components"]!["schemas"]!["PaymentMethod"]!;
@@ -36,9 +38,10 @@ public class SampleApiTests
     public async Task AddEnumDescriptions_SampleApi_OrderStatusCarriesDescriptions()
     {
         // Given: the sample API with descriptions on Pending and Approved
+        await using var sampleApi = SampleApi.Start();
 
         // When: the document is generated
-        var document = await SampleApi.Document();
+        var document = await SampleApi.Fetch(sampleApi);
 
         // Then: OrderStatus lists both descriptions and an empty one for Rejected
         var schema = document["components"]!["schemas"]!["OrderStatus"]!;
