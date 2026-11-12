@@ -2,19 +2,23 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Enumbrella.Sample;
+using Microsoft.AspNetCore.OpenApi;
 
 namespace Enumbrella.Tests;
 
 public class ConverterFailureTests
 {
+    private static readonly Action<OpenApiOptions> Register =
+        options => options.AddEnumDescriptions();
+
     [Fact]
     public async Task AddEnumDescriptions_ConverterCannotWriteValues_LeavesSchemaUntouched()
     {
         // Given: two enums whose converters throw on every write
+        await using var host = await TestApi.Start<UnwritableResponse>(Register);
 
         // When: the document is generated
-        var document = await TestApi.Document<UnwritableResponse>(
-            options => options.AddEnumDescriptions());
+        var document = await TestApi.Fetch(host);
 
         // Then: neither schema gets a value list or a name list
         AssertUntouched(document, "UnsupportedOnWrite", "RejectedOnWrite");
@@ -24,10 +28,10 @@ public class ConverterFailureTests
     public async Task AddEnumDescriptions_ConverterCannotReadValues_LeavesSchemaUntouched()
     {
         // Given: two enums whose converters throw on every read
+        await using var host = await TestApi.Start<UnreadableResponse>(Register);
 
         // When: the document is generated
-        var document = await TestApi.Document<UnreadableResponse>(
-            options => options.AddEnumDescriptions());
+        var document = await TestApi.Fetch(host);
 
         // Then: neither schema gets a value list or a name list
         AssertUntouched(document, "RejectedOnRead", "UnsupportedOnRead");
@@ -37,10 +41,10 @@ public class ConverterFailureTests
     public async Task AddEnumDescriptions_ConverterReadsUndeclaredMember_LeavesSchemaUntouched()
     {
         // Given: a converter that reads each value as an undeclared member
+        await using var host = await TestApi.Start<UndeclaredResponse>(Register);
 
         // When: the document is generated
-        var document = await TestApi.Document<UndeclaredResponse>(
-            options => options.AddEnumDescriptions());
+        var document = await TestApi.Fetch(host);
 
         // Then: the schema gets no value list and no name list
         AssertUntouched(document, "UndeclaredOnRead");
@@ -50,11 +54,12 @@ public class ConverterFailureTests
     public async Task AddEnumDescriptions_UnreadableEntryFromAnotherTransformer_GetsEmptyName()
     {
         // Given: a schema transformer that writes an unreadable entry before the registration
-
-        // When: the document is generated
-        var document = await TestApi.Document<Order>(options => options
+        await using var host = await TestApi.Start<Order>(options => options
             .AddSchemaTransformer(TestApi.WriteUnreadableStatusEntry)
             .AddEnumDescriptions());
+
+        // When: the document is generated
+        var document = await TestApi.Fetch(host);
 
         // Then: the unreadable entry gets an empty name and the readable one keeps its name
         var schema = document["components"]!["schemas"]!["OrderStatus"]!;
