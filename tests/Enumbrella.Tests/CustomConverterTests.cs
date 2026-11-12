@@ -15,10 +15,14 @@ public class CustomConverterTests
     public async Task AddEnumDescriptions_CustomConvertersOnTypeAndInOptions_KeepSharedSchema()
     {
         // Given: enums with a converter on the type and in the options, the latter also nullable
+        await using var registeredHost = await TestApi.Start<ConvertedResponse>(
+            Register, AddOptionsConverter);
+        await using var unregisteredHost = await TestApi.Start<ConvertedResponse>(
+            _ => { }, AddOptionsConverter);
 
         // When: the document is generated with and without the registration
-        var registered = await TestApi.Document<ConvertedResponse>(Register, AddOptionsConverter);
-        var unregistered = await TestApi.Document<ConvertedResponse>(_ => { }, AddOptionsConverter);
+        var registered = await TestApi.Fetch(registeredHost);
+        var unregistered = await TestApi.Fetch(unregisteredHost);
 
         // Then: both schemas match and neither converter ran
         Assert.Equal(Schema(unregistered, "ByType"), Schema(registered, "ByType"));
@@ -31,9 +35,11 @@ public class CustomConverterTests
     public async Task AddEnumDescriptions_BuiltInNextToCustomConverters_ListValuesAndBothNameLists()
     {
         // Given: an integer enum and a string enum next to enums with custom converters
+        await using var host = await TestApi.Start<ConvertedResponse>(
+            Register, AddOptionsConverter);
 
         // When: the document is generated
-        var document = await TestApi.Document<ConvertedResponse>(Register, AddOptionsConverter);
+        var document = await TestApi.Fetch(host);
 
         // Then: both list their values and both name lists
         var shade = document["components"]!["schemas"]!["Shade"]!;
@@ -49,10 +55,12 @@ public class CustomConverterTests
     public async Task AddEnumDescriptions_CustomConvertersOnProperties_KeepSharedSchema()
     {
         // Given: an OrderStatus and an OrderStatus? property, both with a custom converter
+        await using var registeredHost = await TestApi.Start<PropertyConvertedResponse>(Register);
+        await using var unregisteredHost = await TestApi.Start<PropertyConvertedResponse>(_ => { });
 
         // When: the document is generated with and without the registration
-        var registered = await TestApi.Document<PropertyConvertedResponse>(Register);
-        var unregistered = await TestApi.Document<PropertyConvertedResponse>(_ => { });
+        var registered = await TestApi.Fetch(registeredHost);
+        var unregistered = await TestApi.Fetch(unregisteredHost);
 
         // Then: both documents match and the converter never ran
         Assert.Equal(unregistered.ToJsonString(), registered.ToJsonString());
@@ -63,10 +71,14 @@ public class CustomConverterTests
     public async Task AddEnumDescriptions_CustomConvertersOnProperties_KeepInlineSchema()
     {
         // Given: the same properties in a host that keeps enums inline
+        await using var registeredHost =
+            await TestApi.StartInlineEnums<PropertyConvertedResponse>(Register);
+        await using var unregisteredHost =
+            await TestApi.StartInlineEnums<PropertyConvertedResponse>(_ => { });
 
         // When: the document is generated with and without the registration
-        var registered = await TestApi.InlineEnumDocument<PropertyConvertedResponse>(Register);
-        var unregistered = await TestApi.InlineEnumDocument<PropertyConvertedResponse>(_ => { });
+        var registered = await TestApi.Fetch(registeredHost);
+        var unregistered = await TestApi.Fetch(unregisteredHost);
 
         // Then: both documents match and the converter never ran
         Assert.Equal(unregistered.ToJsonString(), registered.ToJsonString());
@@ -77,10 +89,12 @@ public class CustomConverterTests
     public async Task AddEnumDescriptions_NullableEnumWithCustomConverter_KeepsSharedSchema()
     {
         // Given: a nullable enum whose type carries a custom converter
+        await using var registeredHost = await TestApi.Start<NullableConvertedResponse>(Register);
+        await using var unregisteredHost = await TestApi.Start<NullableConvertedResponse>(_ => { });
 
         // When: the document is generated with and without the registration
-        var registered = await TestApi.Document<NullableConvertedResponse>(Register);
-        var unregistered = await TestApi.Document<NullableConvertedResponse>(_ => { });
+        var registered = await TestApi.Fetch(registeredHost);
+        var unregistered = await TestApi.Fetch(unregisteredHost);
 
         // Then: both documents match and the converter never ran
         Assert.Equal(unregistered.ToJsonString(), registered.ToJsonString());
@@ -91,10 +105,14 @@ public class CustomConverterTests
     public async Task AddEnumDescriptions_NullableEnumWithCustomConverter_KeepsInlineSchema()
     {
         // Given: the same nullable enum in a host that keeps enums inline
+        await using var registeredHost =
+            await TestApi.StartInlineEnums<NullableConvertedResponse>(Register);
+        await using var unregisteredHost =
+            await TestApi.StartInlineEnums<NullableConvertedResponse>(_ => { });
 
         // When: the document is generated with and without the registration
-        var registered = await TestApi.InlineEnumDocument<NullableConvertedResponse>(Register);
-        var unregistered = await TestApi.InlineEnumDocument<NullableConvertedResponse>(_ => { });
+        var registered = await TestApi.Fetch(registeredHost);
+        var unregistered = await TestApi.Fetch(unregisteredHost);
 
         // Then: both documents match and the converter never ran
         Assert.Equal(unregistered.ToJsonString(), registered.ToJsonString());
@@ -106,12 +124,14 @@ public class CustomConverterTests
     {
         // Given: plain enums with converters on the type and in the options, and a nullable one
         // in a host that keeps enums inline
+        await using var registeredHost = await TestApi.StartInlineEnums<TypeAndOptionsResponse>(
+            Register, AddOptionsConverter);
+        await using var unregisteredHost = await TestApi.StartInlineEnums<TypeAndOptionsResponse>(
+            _ => { }, AddOptionsConverter);
 
         // When: the document is generated with and without the registration
-        var registered = await TestApi.InlineEnumDocument<TypeAndOptionsResponse>(
-            Register, AddOptionsConverter);
-        var unregistered = await TestApi.InlineEnumDocument<TypeAndOptionsResponse>(
-            _ => { }, AddOptionsConverter);
+        var registered = await TestApi.Fetch(registeredHost);
+        var unregistered = await TestApi.Fetch(unregisteredHost);
 
         // Then: both documents match and neither converter ran
         Assert.Equal(unregistered.ToJsonString(), registered.ToJsonString());

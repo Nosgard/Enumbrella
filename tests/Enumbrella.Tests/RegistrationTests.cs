@@ -10,9 +10,10 @@ public class RegistrationTests
     public async Task AddEnumDescriptions_SchemaOfOrderStatusWithoutRegistration_HasNoEnum()
     {
         // Given: a host without the registration
+        await using var host = await TestApi.Start<Order>(_ => { });
 
         // When: the document is generated
-        var document = await TestApi.Document<Order>(_ => { });
+        var document = await TestApi.Fetch(host);
 
         var schema = document["components"]!["schemas"]!["OrderStatus"]!;
 
@@ -24,10 +25,12 @@ public class RegistrationTests
     public async Task AddEnumDescriptions_RegisteredAndUnregisteredHost_OnlyRegisteredWritesXEnum()
     {
         // Given: one host with the registration and one without
+        await using var sampleApi = SampleApi.Start();
+        await using var unregisteredHost = await TestApi.Start<Order>(_ => { });
 
         // When: both documents are generated
-        var registered = await SampleApi.Document();
-        var unregistered = await TestApi.Document<Order>(_ => { });
+        var registered = await SampleApi.Fetch(sampleApi);
+        var unregistered = await TestApi.Fetch(unregisteredHost);
 
         var registeredStatus = registered["components"]!["schemas"]!["OrderStatus"]!;
 
@@ -39,7 +42,7 @@ public class RegistrationTests
     [Fact]
     public void AddEnumDescriptions_NullOptions_ThrowsArgumentNullException()
     {
-        // Given: no options instance
+        // Given: no options instance, passed as null in the call below
 
         // When: AddEnumDescriptions runs
 
