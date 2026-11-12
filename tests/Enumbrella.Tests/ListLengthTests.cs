@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Enumbrella.Sample;
+using Enumbrella.Tests.Descriptions;
 using Microsoft.AspNetCore.OpenApi;
 
 namespace Enumbrella.Tests;
@@ -10,15 +11,15 @@ public class ListLengthTests
         options => options.AddEnumDescriptions();
 
     [Fact]
-    public async Task AddEnumDescriptions_EveryEnumSchema_HasEqualNameListsAsLongAsEnum()
+    public async Task AddEnumDescriptions_EveryEnumSchema_HasEveryListAsLongAsEnum()
     {
         // Given: the documents of the sample API and of each test API
 
         // When: the schemas with name lists are collected
         var enumSchemas = EnumSchemas(await Documents());
 
-        // Then: each name list is as long as enum and both name lists match
-        Assert.Equal(19, enumSchemas.Count);
+        // Then: each name and description list is as long as enum and both name lists match
+        Assert.Equal(27, enumSchemas.Count);
         Assert.All(enumSchemas, schema =>
         {
             var count = schema["enum"]!.AsArray().Count;
@@ -26,12 +27,22 @@ public class ListLengthTests
             Assert.Equal(count, schema["x-enum-varnames"]!.AsArray().Count);
             Assert.Equal(
                 schema["x-enum-varnames"]!.ToJsonString(), schema["x-enumNames"]!.ToJsonString());
+
+            if (schema["x-enum-descriptions"] is JsonArray descriptions)
+            {
+                Assert.Equal(count, descriptions.Count);
+            }
         });
     }
 
     private static async Task<JsonNode[]> Documents()
     {
-        return [.. await StandardDocuments(), .. await SpecialHostDocuments()];
+        return
+        [
+            .. await StandardDocuments(),
+            .. await DescriptionDocuments(),
+            .. await SpecialHostDocuments(),
+        ];
     }
 
     private static async Task<JsonNode[]> StandardDocuments()
@@ -51,6 +62,18 @@ public class ListLengthTests
             await TestApi.Document<PlainFirstResponse>(Register),
             await TestApi.Document<StringFirstResponse>(Register),
             await TestApi.Document<NumberFirstResponse>(Register),
+        ];
+    }
+
+    private static async Task<JsonNode[]> DescriptionDocuments()
+    {
+        return
+        [
+            await TestApi.Document<StatusDescriptionsResponse>(Register),
+            await TestApi.Document<SpecialTextResponse>(Register),
+            await TestApi.Document<SwitchResponse>(Register),
+            await TestApi.Document<ShippingAndChannelResponse>(Register),
+            await TestApi.Document<LabelledResponse>(Register),
         ];
     }
 
