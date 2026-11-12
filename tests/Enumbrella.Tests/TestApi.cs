@@ -12,12 +12,20 @@ namespace Enumbrella.Tests;
 
 internal static class TestApi
 {
+    // Document, EndpointDocument and InlineEnumDocument serve tests whose starting state is the
+    // finished document, such as the list length test. Other tests start a host and fetch.
     public static async Task<JsonNode> Document<TResponse>(
         Action<OpenApiOptions> configure, Action<JsonSerializerOptions>? configureJson = null)
     {
-        await using var app = await Start(configureJson, MapResponse<TResponse>, ("v1", configure));
+        await using var app = await Start<TResponse>(configure, configureJson);
 
-        return await Fetch(app, "v1");
+        return await Fetch(app);
+    }
+
+    public static Task<WebApplication> Start<TResponse>(
+        Action<OpenApiOptions> configure, Action<JsonSerializerOptions>? configureJson = null)
+    {
+        return Start(configureJson, MapResponse<TResponse>, ("v1", configure));
     }
 
     public static async Task<WebApplication> Start(
@@ -43,7 +51,7 @@ internal static class TestApi
         return app;
     }
 
-    public static async Task<JsonNode> Fetch(WebApplication app, string document)
+    public static async Task<JsonNode> Fetch(WebApplication app, string document = "v1")
     {
         using var client = app.GetTestClient();
         var json = await client.GetStringAsync($"/openapi/{document}.json");
@@ -58,12 +66,17 @@ internal static class TestApi
 
     public static async Task<JsonNode> EndpointDocument(params Action<WebApplication>[] endpoints)
     {
-        await using var app = await Start(
+        await using var app = await StartEndpoints(endpoints);
+
+        return await Fetch(app);
+    }
+
+    public static Task<WebApplication> StartEndpoints(params Action<WebApplication>[] endpoints)
+    {
+        return Start(
             configureJson: null,
             host => Array.ForEach(endpoints, map => map(host)),
             ("v1", options => options.AddEnumDescriptions()));
-
-        return await Fetch(app, "v1");
     }
 
     public static void MapNullableStatus(WebApplication app)
@@ -76,10 +89,18 @@ internal static class TestApi
         app.MapGet("/plain", () => default(OrderStatus));
     }
 
-    public static Task<JsonNode> InlineEnumDocument<TResponse>(
+    public static async Task<JsonNode> InlineEnumDocument<TResponse>(
         Action<OpenApiOptions> configure, Action<JsonSerializerOptions>? configureJson = null)
     {
-        return Document<TResponse>(
+        await using var app = await StartInlineEnums<TResponse>(configure, configureJson);
+
+        return await Fetch(app);
+    }
+
+    public static Task<WebApplication> StartInlineEnums<TResponse>(
+        Action<OpenApiOptions> configure, Action<JsonSerializerOptions>? configureJson = null)
+    {
+        return Start<TResponse>(
             options =>
             {
                 options.CreateSchemaReferenceId = InlineEnumReferenceId;
