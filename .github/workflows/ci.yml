@@ -131,7 +131,7 @@ jobs:
             if [ -f "$f" ]; then cp "$f" "$RUNNER_TEMP/$f"; fi
           done
 
-      - name: Scan for secrets and personal data
+      - name: Scan for secrets
         # Pinned gitleaks CLI with the rules from the step above, or its default rules if the
         # repository has none: the commits of a pull request, the full history on a push.
         env:
