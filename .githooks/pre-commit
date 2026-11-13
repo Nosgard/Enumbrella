@@ -8,30 +8,16 @@
 # Added lines and staged file names only, so removing a leaked value stays possible.
 if ! gitleaks_git --pre-commit --staged; then
   echo "pre-commit: secrets or personal data in the staged changes, commit refused." >&2
-  echo "Values belong in the environment (.env)." >&2
   echo "Test data is invented (example.com, 000 numbers)." >&2
   exit 1
 fi
 
-FORMAT="dotnet format --verify-no-changes --include"
-FORMAT_FILES="*.cs"
+# The quoted pattern reaches git as one pathspec. -z and xargs -0 keep file names with
+# spaces whole, -r skips the check when no staged file matches.
+git diff --cached --name-only --diff-filter=ACMR -z -- '*.cs' |
+  xargs -0 -r dotnet format --verify-no-changes --include ||
+  { echo "pre-commit: format check failed, run the formatter on the staged files." >&2; exit 1; }
 
-if [ -n "$FORMAT" ]; then
-  [ -n "$FORMAT_FILES" ] || { echo "pre-commit: FORMAT needs FORMAT_FILES." >&2; exit 1; }
-
-  # Without globbing each pattern reaches git as one pathspec. -z and xargs -0 keep file
-  # names with spaces whole, -r skips the check when no staged file matches.
-  set -f
-  git diff --cached --name-only --diff-filter=ACMR -z -- $FORMAT_FILES |
-    xargs -0 -r sh -c "$FORMAT \"\$@\"" format ||
-    { echo "pre-commit: format check failed, run the formatter on the staged files." >&2; exit 1; }
-  set +f
-fi
-
-LINT="dotnet build -c Release -warnaserror"
-
-if [ -n "$LINT" ]; then
-  sh -c "$LINT" || { echo "pre-commit: lint failed." >&2; exit 1; }
-fi
+dotnet build -c Release -warnaserror || { echo "pre-commit: lint failed." >&2; exit 1; }
 
 exit 0
