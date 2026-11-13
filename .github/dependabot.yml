@@ -6,8 +6,6 @@ updates:
       interval: "weekly"
     # 0 turns off routine version updates; security updates still open pull requests.
     open-pull-requests-limit: 0
-    cooldown:
-      default-days: 14
     ignore:
       # Version 11 of both packages belongs to .NET 11, which the project does not target yet.
       - dependency-name: "Microsoft.AspNetCore.OpenApi"
