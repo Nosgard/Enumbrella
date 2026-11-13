@@ -1,5 +1,4 @@
 using System.Text.Json.Nodes;
-using Enumbrella.Sample;
 using Microsoft.AspNetCore.OpenApi;
 
 namespace Enumbrella.Tests;
