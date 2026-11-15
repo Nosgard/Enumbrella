@@ -115,25 +115,10 @@ jobs:
           else
             cp .githooks/commit-msg "$RUNNER_TEMP/commit-msg"
           fi
-          for f in .gitleaks.toml .gitleaksignore; do
-            if git cat-file -e "$BASE:$f" 2>/dev/null; then
-              git show "$BASE:$f" > "$RUNNER_TEMP/$f"
-            fi
-            # gitleaks would also read them from the scanned folder.
-            rm -f "$f"
-          done
-
-      - name: Take the rules from the checkout
-        # Pushes to the default branch use the checkout, which only changes through pull requests.
-        if: github.event_name == 'push'
-        run: |
-          for f in .gitleaks.toml .gitleaksignore; do
-            if [ -f "$f" ]; then cp "$f" "$RUNNER_TEMP/$f"; fi
-          done
 
       - name: Scan for secrets
-        # Pinned gitleaks CLI with the rules from the step above, or its default rules if the
-        # repository has none: the commits of a pull request, the full history on a push.
+        # Pinned gitleaks CLI with its default rules: the commits of a pull request, the full
+        # history on a push.
         env:
           GITLEAKS_VERSION: 8.30.1
           GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
@@ -141,6 +126,9 @@ jobs:
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}
         run: |
+          # gitleaks would read these two from the scanned folder and change its rules with them.
+          rm -f .gitleaks.toml .gitleaksignore
+
           # A .gitattributes in the repository must not mark files as binary for the scan.
           mkdir -p .git/info
           printf '* diff\n' > .git/info/attributes
@@ -152,9 +140,6 @@ jobs:
           tar -xzf "$archive" -C "$RUNNER_TEMP" gitleaks
 
           set -- --redact --no-banner --ignore-gitleaks-allow --gitleaks-ignore-path "$RUNNER_TEMP"
-          if [ -f "$RUNNER_TEMP/.gitleaks.toml" ]; then
-            set -- "$@" -c "$RUNNER_TEMP/.gitleaks.toml"
-          fi
           if [ "$EVENT" = pull_request ]; then
             set -- "$@" --log-opts="$BASE..$HEAD"
           fi
