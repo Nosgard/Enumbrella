@@ -116,6 +116,11 @@ jobs:
             cp .githooks/commit-msg "$RUNNER_TEMP/commit-msg"
           fi
 
+          # The ignore rules too: the .gitignore files of the base replace the pull request's,
+          # all written anew with the base's attributes, which the pull request cannot change.
+          git ls-files -z -- ':(glob)**/.gitignore' | xargs -0 rm -f --
+          git --attr-source="$BASE" restore --source="$BASE" -- ':(glob)**/.gitignore'
+
       - name: Scan for secrets
         # Pinned gitleaks CLI with its default rules: the commits of a pull request, the full
         # history on a push.
@@ -144,6 +149,31 @@ jobs:
             set -- "$@" --log-opts="$BASE..$HEAD"
           fi
           "$RUNNER_TEMP/gitleaks" git "$@" .
+
+      - name: Check for ignored files
+        # git add -f stages files that git ignores. Every commit of the pull request or the push
+        # counts, a merge only for files none of its parents has, also when a later commit
+        # removes the file. Upper and lower case count alike, as on Windows and macOS.
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          range="$BEFORE..$GITHUB_SHA"
+          if [ "$EVENT" = pull_request ]; then range="$BASE..$HEAD"; fi
+          git log --no-renames --diff-merges=combined --diff-filter=A --name-only --format= \
+            "$range" > "$RUNNER_TEMP/added.txt"
+
+          # check-ignore exits with 1 when git ignores none of the files; any other code fails.
+          status=0
+          files=$(git -c core.ignorecase=true check-ignore --no-index --stdin \
+            < "$RUNNER_TEMP/added.txt") || status=$?
+          if [ "$status" -ne 1 ]; then
+            echo "Files that git ignores do not belong in the repository:" >&2
+            printf '%s\n' "$files" >&2
+            exit 1
+          fi
 
       - name: Check pull request title
         # The squash merge makes the title the first line on the default branch, so the base's
