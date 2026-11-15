@@ -1,11 +1,5 @@
 <Solution>
-  <Folder Name="/samples/">
-    <Project Path="samples/Enumbrella.Sample/Enumbrella.Sample.csproj" />
-  </Folder>
-  <Folder Name="/src/">
-    <Project Path="src/Enumbrella/Enumbrella.csproj" />
-  </Folder>
-  <Folder Name="/tests/">
-    <Project Path="tests/Enumbrella.Tests/Enumbrella.Tests.csproj" />
-  </Folder>
+  <Project Path="samples/Enumbrella.Sample/Enumbrella.Sample.csproj" />
+  <Project Path="src/Enumbrella/Enumbrella.csproj" />
+  <Project Path="tests/Enumbrella.Tests/Enumbrella.Tests.csproj" />
 </Solution>
