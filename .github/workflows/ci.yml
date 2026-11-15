@@ -13,15 +13,8 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
   TESTINGPLATFORM_TELEMETRY_OPTOUT: 1
 
-concurrency:
-  # A pull request cancels its older runs; each push to the default branch has a group of its
-  # own, so no merge commit loses its run.
-  group: ci-${{ github.event.pull_request.number || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
 jobs:
   build-test:
-    name: build-test
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -48,7 +41,6 @@ jobs:
         run: dotnet test -c Release --no-build
 
   audit:
-    name: audit
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -68,7 +60,6 @@ jobs:
         run: dotnet restore --locked-mode
 
   sast:
-    name: sast
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -91,7 +82,6 @@ jobs:
             --severity ERROR --error .
 
   checks:
-    name: checks
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -217,7 +207,6 @@ jobs:
           done
 
   zizmor:
-    name: zizmor
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
