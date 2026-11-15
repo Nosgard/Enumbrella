@@ -2,7 +2,6 @@
 # commit-msg: enforces Conventional Commits 1.0.0 (https://www.conventionalcommits.org/en/v1.0.0/)
 # with the type in lowercase and a first line of at most 72 characters. CI checks the pull
 # request title with this hook too.
-# Trailers such as Co-authored-by are allowed.
 
 msg_file="$1"
 # Comment lines and everything below the scissors line of `git commit -v` are not part of it.
