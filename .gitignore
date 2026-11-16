@@ -1,8 +1,12 @@
 .env
 .env.*
+*.env
+.envrc
 *.pem
 *.key
 credentials*.json
+.netrc
+.git-credentials
 *.log
 .DS_Store
 bin/
@@ -15,12 +19,11 @@ obj/
 *.keystore
 *.ppk
 *.publishsettings
-id_rsa
-id_dsa
-id_ecdsa
-id_ed25519
-id_ecdsa_sk
-id_ed25519_sk
+id_rsa*
+id_dsa*
+id_ecdsa*
+id_ed25519*
+!id_*.pub
 
 *.sqlite*
 *.db
