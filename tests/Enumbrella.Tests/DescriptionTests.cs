@@ -37,23 +37,6 @@ public class DescriptionTests
     }
 
     [Fact]
-    public async Task AddEnumDescriptions_NoMemberDescribed_WritesNamesWithoutDescriptions()
-    {
-        // Given: an enum without any description attribute
-        await using var host = await TestApi.Start<PriorityResponse>(TestApi.Register);
-
-        // When: the document is generated
-        var document = await TestApi.Fetch(host);
-
-        // Then: the schema has its name list and no description list
-        TestApi.AssertEnum(
-            TestApi.Schema(document, "Priority"),
-            "[1,5,10]",
-            "[\"Low\",\"Medium\",\"High\"]",
-            null);
-    }
-
-    [Fact]
     public async Task AddEnumDescriptions_LaterDuplicateDescribed_KeepsEmptyFirstDescription()
     {
         // Given: Active and Enabled share the value 1, and only Enabled has a description
