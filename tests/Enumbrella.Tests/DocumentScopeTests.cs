@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.OpenApi;
 
 namespace Enumbrella.Tests;
 
@@ -56,12 +55,11 @@ public class DocumentScopeTests
 
     private static Task<WebApplication> StartBothDocuments()
     {
-        Action<OpenApiOptions> withoutRegistration = _ => { };
-
         return TestApi.Start(
             configureJson: null,
             TestApi.MapResponse<ScopeResponse>,
             ("v1", TestApi.Register),
-            ("v2", withoutRegistration));
+            ("v2", _ => { }
+        ));
     }
 }
