@@ -28,13 +28,13 @@ public class PropertyConverterTests
     {
         // Given: a JsonStringEnumConverter on an inline OrderStatus? property
         await using var host =
-            await TestApi.StartInlineEnums<StringPropertyResponse>(TestApi.Register);
+            await TestApi.StartInlineEnums<NullableStringPropertyResponse>(TestApi.Register);
 
         // When: the document is generated
         var document = await TestApi.Fetch(host);
 
         // Then: each string keeps its member name and null gets an empty name
-        var schema = TestApi.Property(document, "StringPropertyResponse", "optional");
+        var schema = TestApi.Property(document, "NullableStringPropertyResponse", "optional");
         var values = "[\"Pending\",\"Approved\",\"Rejected\",null]";
         var names = "[\"Pending\",\"Approved\",\"Rejected\",\"\"]";
 

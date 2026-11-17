@@ -1,4 +1,4 @@
-using Enumbrella.Tests.Descriptions;
+using Enumbrella.Sample;
 
 namespace Enumbrella.Tests;
 
@@ -8,7 +8,7 @@ public class DescriptionTests
     public async Task AddEnumDescriptions_SomeMembersDescribed_WritesDescriptionsWithEmptyGap()
     {
         // Given: OrderStatus with descriptions on Pending and Approved, none on Rejected
-        await using var host = await TestApi.Start<StatusDescriptionsResponse>(TestApi.Register);
+        await using var host = await TestApi.Start<Order>(TestApi.Register);
 
         // When: the document is generated
         var document = await TestApi.Fetch(host);
@@ -77,7 +77,7 @@ public class DescriptionTests
     public async Task AddEnumDescriptions_UnsortedDescribedEnum_OrdersDescriptionsLikeEnum()
     {
         // Given: Shipping declares Express = 3 before Standard = 1 and Pickup = 2
-        await using var host = await TestApi.Start<ShippingAndChannelResponse>(TestApi.Register);
+        await using var host = await TestApi.Start<ShippingResponse>(TestApi.Register);
 
         // When: the document is generated
         var document = await TestApi.Fetch(host);
@@ -95,7 +95,7 @@ public class DescriptionTests
     public async Task AddEnumDescriptions_DescriptionAttributeWithNull_WritesEmptyDescription()
     {
         // Given: Mail carries [Description(null)] and Phone a text
-        await using var host = await TestApi.Start<ShippingAndChannelResponse>(TestApi.Register);
+        await using var host = await TestApi.Start<ChannelResponse>(TestApi.Register);
 
         // When: the document is generated
         var document = await TestApi.Fetch(host);
@@ -128,7 +128,7 @@ public class DescriptionTests
     public async Task AddEnumDescriptions_OnlyDerivedAttribute_WritesDescriptions()
     {
         // Given: Localized has a derived description attribute on Card and no exact one anywhere
-        await using var host = await TestApi.Start<LabelledResponse>(TestApi.Register);
+        await using var host = await TestApi.Start<LocalizedResponse>(TestApi.Register);
 
         // When: the document is generated
         var document = await TestApi.Fetch(host);

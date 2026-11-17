@@ -1,6 +1,5 @@
 using System.Text.Json.Nodes;
 using Enumbrella.Sample;
-using Enumbrella.Tests.Descriptions;
 
 namespace Enumbrella.Tests;
 
@@ -66,11 +65,13 @@ public class ListLengthTests
     {
         return
         [
-            await TestApi.Document<StatusDescriptionsResponse>(TestApi.Register),
+            await TestApi.Document<Order>(TestApi.Register),
             await TestApi.Document<SpecialTextResponse>(TestApi.Register),
             await TestApi.Document<SwitchResponse>(TestApi.Register),
-            await TestApi.Document<ShippingAndChannelResponse>(TestApi.Register),
+            await TestApi.Document<ShippingResponse>(TestApi.Register),
+            await TestApi.Document<ChannelResponse>(TestApi.Register),
             await TestApi.Document<LabelledResponse>(TestApi.Register),
+            await TestApi.Document<LocalizedResponse>(TestApi.Register),
         ];
     }
 
@@ -83,6 +84,7 @@ public class ListLengthTests
                 .AddEnumDescriptions()),
             await TestApi.InlineEnumDocument<NullableStatusResponse>(TestApi.Register),
             await TestApi.InlineEnumDocument<StringPropertyResponse>(TestApi.Register),
+            await TestApi.InlineEnumDocument<NullableStringPropertyResponse>(TestApi.Register),
             await TestApi.EndpointDocument(TestApi.MapNullableStatus, TestApi.MapPlainStatus),
             await TestApi.EndpointDocument(TestApi.MapPlainStatus, TestApi.MapNullableStatus),
         ];

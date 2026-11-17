@@ -49,7 +49,9 @@ internal sealed record NullableFirstResponse(OrderStatus? First, OrderStatus Sec
 internal sealed record PlainFirstResponse(OrderStatus First, OrderStatus? Second);
 
 internal sealed record StringPropertyResponse(
-    [property: JsonConverter(typeof(JsonStringEnumConverter))] OrderStatus Plain,
+    [property: JsonConverter(typeof(JsonStringEnumConverter))] OrderStatus Plain);
+
+internal sealed record NullableStringPropertyResponse(
     [property: JsonConverter(typeof(JsonStringEnumConverter))] OrderStatus? Optional);
 
 internal sealed record StringFirstResponse(

@@ -1,18 +1,6 @@
 using System.ComponentModel;
 
-namespace Enumbrella.Tests.Descriptions;
-
-// Kept apart from the sample's OrderStatus: in one document both would map to one component.
-internal enum OrderStatus
-{
-    [Description("Waiting for approval")]
-    Pending = 0,
-
-    [Description("Approved")]
-    Approved = 1,
-
-    Rejected = 2,
-}
+namespace Enumbrella.Tests;
 
 internal enum SpecialText
 {
@@ -97,12 +85,14 @@ internal sealed class MissingTextAttribute : DescriptionAttribute
     public override string Description => null!;
 }
 
-internal sealed record StatusDescriptionsResponse(OrderStatus Status);
-
 internal sealed record SpecialTextResponse(SpecialText Text);
 
 internal sealed record SwitchResponse(Switch Switch);
 
-internal sealed record ShippingAndChannelResponse(Shipping Shipping, Channel Channel);
+internal sealed record ShippingResponse(Shipping Shipping);
 
-internal sealed record LabelledResponse(Labelled Labelled, Localized Localized);
+internal sealed record ChannelResponse(Channel Channel);
+
+internal sealed record LabelledResponse(Labelled Labelled);
+
+internal sealed record LocalizedResponse(Localized Localized);
