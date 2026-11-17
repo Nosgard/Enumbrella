@@ -12,10 +12,11 @@ public class ValueOrderTests
         var document = await TestApi.Fetch(host);
 
         // Then: the values ascend and each name stays with its value
-        var schema = TestApi.Schema(document, "Priority");
-
-        Assert.Equal("[1,5,10]", schema["enum"]!.ToJsonString());
-        Assert.Equal("[\"Low\",\"Medium\",\"High\"]", schema["x-enum-varnames"]!.ToJsonString());
+        TestApi.AssertEnum(
+            TestApi.Schema(document, "Priority"),
+            "[1,5,10]",
+            "[\"Low\",\"Medium\",\"High\"]",
+            null);
     }
 
     [Fact]
@@ -28,11 +29,11 @@ public class ValueOrderTests
         var document = await TestApi.Fetch(host);
 
         // Then: the lowest value comes first and each name stays with it
-        var schema = TestApi.Schema(document, "Temperature");
-
-        Assert.Equal("[-10,-1,0,5]", schema["enum"]!.ToJsonString());
-        Assert.Equal(
-            "[\"Freezing\",\"Cold\",\"Mild\",\"Warm\"]", schema["x-enum-varnames"]!.ToJsonString());
+        TestApi.AssertEnum(
+            TestApi.Schema(document, "Temperature"),
+            "[-10,-1,0,5]",
+            "[\"Freezing\",\"Cold\",\"Mild\",\"Warm\"]",
+            null);
     }
 
     [Fact]
@@ -45,10 +46,11 @@ public class ValueOrderTests
         var document = await TestApi.Fetch(host);
 
         // Then: the values reach 255 and each name stays with its value
-        var schema = TestApi.Schema(document, "Level");
-
-        Assert.Equal("[1,255]", schema["enum"]!.ToJsonString());
-        Assert.Equal("[\"Low\",\"High\"]", schema["x-enum-varnames"]!.ToJsonString());
+        TestApi.AssertEnum(
+            TestApi.Schema(document, "Level"),
+            "[1,255]",
+            "[\"Low\",\"High\"]",
+            null);
     }
 
     [Fact]
@@ -61,9 +63,10 @@ public class ValueOrderTests
         var document = await TestApi.Fetch(host);
 
         // Then: the large value stays intact and keeps its name
-        var schema = TestApi.Schema(document, "Distance");
-
-        Assert.Equal("[1,10000000000]", schema["enum"]!.ToJsonString());
-        Assert.Equal("[\"Near\",\"Far\"]", schema["x-enum-varnames"]!.ToJsonString());
+        TestApi.AssertEnum(
+            TestApi.Schema(document, "Distance"),
+            "[1,10000000000]",
+            "[\"Near\",\"Far\"]",
+            null);
     }
 }

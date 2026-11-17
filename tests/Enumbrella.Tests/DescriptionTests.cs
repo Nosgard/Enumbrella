@@ -14,11 +14,7 @@ public class DescriptionTests
         var document = await TestApi.Fetch(host);
 
         // Then: the description list follows enum and leaves Rejected empty
-        var schema = TestApi.Schema(document, "OrderStatus");
-
-        Assert.Equal(
-            "[\"Waiting for approval\",\"Approved\",\"\"]",
-            schema["x-enum-descriptions"]!.ToJsonString());
+        TestApi.AssertStatusComponent(document);
     }
 
     [Fact]
@@ -50,10 +46,11 @@ public class DescriptionTests
         var document = await TestApi.Fetch(host);
 
         // Then: the schema has its name list and no description list
-        var schema = TestApi.Schema(document, "Priority");
-
-        Assert.NotNull(schema["x-enum-varnames"]);
-        Assert.Null(schema["x-enum-descriptions"]);
+        TestApi.AssertEnum(
+            TestApi.Schema(document, "Priority"),
+            "[1,5,10]",
+            "[\"Low\",\"Medium\",\"High\"]",
+            null);
     }
 
     [Fact]
@@ -66,11 +63,11 @@ public class DescriptionTests
         var document = await TestApi.Fetch(host);
 
         // Then: the value 1 keeps Active's name and its empty description
-        var schema = TestApi.Schema(document, "Switch");
-
-        Assert.Equal("[1,2]", schema["enum"]!.ToJsonString());
-        Assert.Equal("[\"Active\",\"Disabled\"]", schema["x-enum-varnames"]!.ToJsonString());
-        Assert.Equal("[\"\",\"\"]", schema["x-enum-descriptions"]!.ToJsonString());
+        TestApi.AssertEnum(
+            TestApi.Schema(document, "Switch"),
+            "[1,2]",
+            "[\"Active\",\"Disabled\"]",
+            "[\"\",\"\"]");
     }
 
     [Fact]
@@ -83,12 +80,11 @@ public class DescriptionTests
         var document = await TestApi.Fetch(host);
 
         // Then: each description stands at the position of its value in enum
-        var schema = TestApi.Schema(document, "Shipping");
-
-        Assert.Equal("[1,2,3]", schema["enum"]!.ToJsonString());
-        Assert.Equal(
-            "[\"Standard delivery\",\"Pickup\",\"Express delivery\"]",
-            schema["x-enum-descriptions"]!.ToJsonString());
+        TestApi.AssertEnum(
+            TestApi.Schema(document, "Shipping"),
+            "[1,2,3]",
+            "[\"Standard\",\"Pickup\",\"Express\"]",
+            "[\"Standard delivery\",\"Pickup\",\"Express delivery\"]");
     }
 
     [Fact]
@@ -101,9 +97,11 @@ public class DescriptionTests
         var document = await TestApi.Fetch(host);
 
         // Then: the null description becomes an empty string
-        var schema = TestApi.Schema(document, "Channel");
-
-        Assert.Equal("[\"\",\"By phone\"]", schema["x-enum-descriptions"]!.ToJsonString());
+        TestApi.AssertEnum(
+            TestApi.Schema(document, "Channel"),
+            "[1,2]",
+            "[\"Mail\",\"Phone\"]",
+            "[\"\",\"By phone\"]");
     }
 
     [Fact]
@@ -117,11 +115,11 @@ public class DescriptionTests
         var document = await TestApi.Fetch(host);
 
         // Then: the exact text wins, a single derived one counts, anything else stays empty
-        var schema = TestApi.Schema(document, "Labelled");
-
-        Assert.Equal(
-            "[\"A\",\"A\",\"Translated only\",\"\",\"\"]",
-            schema["x-enum-descriptions"]!.ToJsonString());
+        TestApi.AssertEnum(
+            TestApi.Schema(document, "Labelled"),
+            "[1,2,3,4,5]",
+            "[\"ExactFirst\",\"ExactLast\",\"DerivedOnly\",\"TwoDerived\",\"NullText\"]",
+            "[\"A\",\"A\",\"Translated only\",\"\",\"\"]");
     }
 
     [Fact]
@@ -134,8 +132,10 @@ public class DescriptionTests
         var document = await TestApi.Fetch(host);
 
         // Then: the description list exists and leaves Cash empty
-        var schema = TestApi.Schema(document, "Localized");
-
-        Assert.Equal("[\"Translated card\",\"\"]", schema["x-enum-descriptions"]!.ToJsonString());
+        TestApi.AssertEnum(
+            TestApi.Schema(document, "Localized"),
+            "[1,2]",
+            "[\"Card\",\"Cash\"]",
+            "[\"Translated card\",\"\"]");
     }
 }

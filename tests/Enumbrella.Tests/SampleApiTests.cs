@@ -11,7 +11,7 @@ public class SampleApiTests
         // When: the document is generated
         var document = await SampleApi.Fetch(sampleApi);
 
-        // Then: OrderStatus lists its values and both name lists
+        // Then: OrderStatus lists its values, both name lists and its descriptions
         TestApi.AssertStatusComponent(document);
     }
 
@@ -25,29 +25,10 @@ public class SampleApiTests
         var document = await SampleApi.Fetch(sampleApi);
 
         // Then: each string has its C# name and its description at the same position
-        var schema = TestApi.Schema(document, "PaymentMethod");
-        var descriptions = "[\"Paid by card\",\"Paid on invoice\",\"Paid by bank transfer\"]";
-
-        Assert.Equal("[\"card\",\"invoice\",\"bankTransfer\"]", schema["enum"]!.ToJsonString());
-        Assert.Equal(
-            "[\"Card\",\"Invoice\",\"BankTransfer\"]", schema["x-enum-varnames"]!.ToJsonString());
-        Assert.Equal(descriptions, schema["x-enum-descriptions"]!.ToJsonString());
-    }
-
-    [Fact]
-    public async Task AddEnumDescriptions_SampleApi_OrderStatusCarriesDescriptions()
-    {
-        // Given: the sample API with descriptions on Pending and Approved
-        await using var sampleApi = SampleApi.Start();
-
-        // When: the document is generated
-        var document = await SampleApi.Fetch(sampleApi);
-
-        // Then: OrderStatus lists both descriptions and an empty one for Rejected
-        var schema = TestApi.Schema(document, "OrderStatus");
-
-        Assert.Equal(
-            "[\"Waiting for approval\",\"Approved\",\"\"]",
-            schema["x-enum-descriptions"]!.ToJsonString());
+        TestApi.AssertEnum(
+            TestApi.Schema(document, "PaymentMethod"),
+            "[\"card\",\"invoice\",\"bankTransfer\"]",
+            "[\"Card\",\"Invoice\",\"BankTransfer\"]",
+            "[\"Paid by card\",\"Paid on invoice\",\"Paid by bank transfer\"]");
     }
 }

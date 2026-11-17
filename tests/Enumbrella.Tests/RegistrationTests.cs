@@ -33,9 +33,7 @@ public class RegistrationTests
         var unregistered = await TestApi.Fetch(unregisteredHost);
 
         // Then: only the registered document carries x-enum extensions
-        var registeredStatus = TestApi.Schema(registered, "OrderStatus");
-
-        Assert.NotNull(registeredStatus["x-enum-varnames"]);
+        TestApi.AssertStatusComponent(registered);
         Assert.DoesNotContain("\"x-enum", unregistered.ToJsonString(), StringComparison.Ordinal);
     }
 

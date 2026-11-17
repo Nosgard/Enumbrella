@@ -57,10 +57,12 @@ public class ConverterFailureTests
         // When: the document is generated
         var document = await TestApi.Fetch(host);
 
-        // Then: the unreadable entry gets an empty name and the readable one keeps its name
-        var schema = TestApi.Schema(document, "OrderStatus");
-
-        Assert.Equal("[\"\",\"Pending\"]", schema["x-enum-varnames"]!.ToJsonString());
+        // Then: the unreadable entry gets an empty name and description, the readable one its own
+        TestApi.AssertEnum(
+            TestApi.Schema(document, "OrderStatus"),
+            "[\"unknown\",0]",
+            "[\"\",\"Pending\"]",
+            "[\"\",\"Waiting for approval\"]");
     }
 
     private static void AssertUntouched(JsonNode document, params string[] names)

@@ -14,13 +14,14 @@ public class PropertyConverterTests
         // When: the document is generated
         var document = await TestApi.Fetch(host);
 
-        // Then: the strings in enum and both name lists match the member names
-        var schema = TestApi.Property(document, "StringPropertyResponse", "plain");
+        // Then: the strings in enum and both name lists match the member names, with descriptions
         var names = "[\"Pending\",\"Approved\",\"Rejected\"]";
 
-        Assert.Equal(names, schema["enum"]!.ToJsonString());
-        Assert.Equal(names, schema["x-enum-varnames"]!.ToJsonString());
-        Assert.Equal(names, schema["x-enumNames"]!.ToJsonString());
+        TestApi.AssertEnum(
+            TestApi.Property(document, "StringPropertyResponse", "plain"),
+            names,
+            names,
+            "[\"Waiting for approval\",\"Approved\",\"\"]");
     }
 
     [Fact]
@@ -33,14 +34,12 @@ public class PropertyConverterTests
         // When: the document is generated
         var document = await TestApi.Fetch(host);
 
-        // Then: each string keeps its member name and null gets an empty name
-        var schema = TestApi.Property(document, "NullableStringPropertyResponse", "optional");
-        var values = "[\"Pending\",\"Approved\",\"Rejected\",null]";
-        var names = "[\"Pending\",\"Approved\",\"Rejected\",\"\"]";
-
-        Assert.Equal(values, schema["enum"]!.ToJsonString());
-        Assert.Equal(names, schema["x-enum-varnames"]!.ToJsonString());
-        Assert.Equal(names, schema["x-enumNames"]!.ToJsonString());
+        // Then: each string keeps its member name and null gets an empty name and description
+        TestApi.AssertEnum(
+            TestApi.Property(document, "NullableStringPropertyResponse", "optional"),
+            "[\"Pending\",\"Approved\",\"Rejected\",null]",
+            "[\"Pending\",\"Approved\",\"Rejected\",\"\"]",
+            "[\"Waiting for approval\",\"Approved\",\"\",\"\"]");
     }
 
     [Fact]
@@ -54,12 +53,14 @@ public class PropertyConverterTests
         var registered = await TestApi.Fetch(registeredHost);
         var unregistered = await TestApi.Fetch(unregisteredHost);
 
-        // Then: the names follow the strings, and nothing else differs
-        var status = TestApi.Schema(registered, "OrderStatus");
+        // Then: the names and descriptions follow the strings, and nothing else differs
         var names = "[\"Pending\",\"Approved\",\"Rejected\"]";
 
-        Assert.Equal(names, status["x-enum-varnames"]!.ToJsonString());
-        Assert.Equal(names, status["x-enumNames"]!.ToJsonString());
+        TestApi.AssertEnum(
+            TestApi.Schema(registered, "OrderStatus"),
+            names,
+            names,
+            "[\"Waiting for approval\",\"Approved\",\"\"]");
         Assert.Equal(unregistered.ToJsonString(), WithoutAddedKeywords(registered).ToJsonString());
     }
 

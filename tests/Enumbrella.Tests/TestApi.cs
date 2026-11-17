@@ -172,13 +172,22 @@ internal static class TestApi
         };
     }
 
-    public static void AssertStatusComponent(JsonNode document)
+    // Checks enum and all three lists of one schema; null descriptions means no description list.
+    public static void AssertEnum(
+        JsonNode schema, string values, string names, string? descriptions)
     {
-        var schema = Schema(document, "OrderStatus");
-        var names = "[\"Pending\",\"Approved\",\"Rejected\"]";
-
-        Assert.Equal("[0,1,2]", schema["enum"]!.ToJsonString());
+        Assert.Equal(values, schema["enum"]!.ToJsonString());
         Assert.Equal(names, schema["x-enum-varnames"]!.ToJsonString());
         Assert.Equal(names, schema["x-enumNames"]!.ToJsonString());
+        Assert.Equal(descriptions, schema["x-enum-descriptions"]?.ToJsonString());
+    }
+
+    public static void AssertStatusComponent(JsonNode document)
+    {
+        AssertEnum(
+            Schema(document, "OrderStatus"),
+            "[0,1,2]",
+            "[\"Pending\",\"Approved\",\"Rejected\"]",
+            "[\"Waiting for approval\",\"Approved\",\"\"]");
     }
 }

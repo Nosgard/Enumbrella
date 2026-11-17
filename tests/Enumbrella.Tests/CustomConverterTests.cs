@@ -43,14 +43,11 @@ public class CustomConverterTests
         // When: the document is generated
         var document = await TestApi.Fetch(host);
 
-        // Then: both list their values and both name lists
-        var shade = TestApi.Schema(document, "Shade");
+        // Then: both list their values and both name lists, and Shade has no descriptions
         var names = "[\"Light\",\"Dark\"]";
 
         TestApi.AssertStatusComponent(document);
-        Assert.Equal(names, shade["enum"]!.ToJsonString());
-        Assert.Equal(names, shade["x-enum-varnames"]!.ToJsonString());
-        Assert.Equal(names, shade["x-enumNames"]!.ToJsonString());
+        TestApi.AssertEnum(TestApi.Schema(document, "Shade"), names, names, null);
     }
 
     [Fact]

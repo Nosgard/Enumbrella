@@ -64,12 +64,12 @@ public class NullableEnumTests
         // When: the document is generated
         var document = await TestApi.Fetch(host);
 
-        // Then: the null entry has an empty name in both name lists
-        var schema = TestApi.Property(document, "NullableStatusResponse", "status");
-        var names = "[\"Pending\",\"Approved\",\"Rejected\",\"\"]";
-
-        Assert.Equal(names, schema["x-enum-varnames"]!.ToJsonString());
-        Assert.Equal(names, schema["x-enumNames"]!.ToJsonString());
+        // Then: the null entry has an empty name in both name lists and an empty description
+        TestApi.AssertEnum(
+            TestApi.Property(document, "NullableStatusResponse", "status"),
+            "[0,1,2,null]",
+            "[\"Pending\",\"Approved\",\"Rejected\",\"\"]",
+            "[\"Waiting for approval\",\"Approved\",\"\",\"\"]");
     }
 
     [Fact]
