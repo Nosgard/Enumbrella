@@ -37,17 +37,23 @@ public class CustomConverterTests
     public async Task AddEnumDescriptions_BuiltInNextToCustomConverters_ListValuesAndBothNameLists()
     {
         // Given: an integer enum and a string enum next to enums with custom converters
+        CountingConverter<ByType>.Reset();
+        CountingConverter<ByOptions>.Reset();
+
         await using var host = await TestApi.Start<ConvertedResponse>(
             TestApi.Register, AddOptionsConverter);
 
         // When: the document is generated
         var document = await TestApi.Fetch(host);
 
-        // Then: both list their values and both name lists, and Shade has no descriptions
+        // Then: both list their values and both name lists, Shade has no descriptions, and
+        // neither custom converter ran
         var names = "[\"Light\",\"Dark\"]";
 
         TestApi.AssertStatusComponent(document);
         TestApi.AssertEnum(TestApi.Schema(document, "Shade"), names, names, null);
+        Assert.Equal(0, CountingConverter<ByType>.Calls);
+        Assert.Equal(0, CountingConverter<ByOptions>.Calls);
     }
 
     [Fact]
