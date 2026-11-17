@@ -3,7 +3,7 @@ namespace Enumbrella.Tests;
 public class ValueOrderTests
 {
     [Fact]
-    public async Task AddEnumDescriptions_UnsortedEnum_YieldsAscendingValuesWithMatchingNames()
+    public async Task AddEnumDescriptions_UnsortedEnum_YieldsAscendingValuesWithNamesOnly()
     {
         // Given: an enum declared out of value order
         await using var host = await TestApi.Start<PriorityResponse>(TestApi.Register);

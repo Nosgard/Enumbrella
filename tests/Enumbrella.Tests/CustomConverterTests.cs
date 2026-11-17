@@ -34,7 +34,7 @@ public class CustomConverterTests
     }
 
     [Fact]
-    public async Task AddEnumDescriptions_BuiltInNextToCustomConverters_ListValuesAndBothNameLists()
+    public async Task AddEnumDescriptions_BuiltInNextToCustomConverters_DescribeOnlyDescribedEnums()
     {
         // Given: an integer enum and a string enum next to enums with custom converters
         CountingConverter<ByType>.Reset();

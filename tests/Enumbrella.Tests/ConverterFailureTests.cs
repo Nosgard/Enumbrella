@@ -47,7 +47,7 @@ public class ConverterFailureTests
     }
 
     [Fact]
-    public async Task AddEnumDescriptions_UnreadableEntryFromAnotherTransformer_GetsEmptyName()
+    public async Task AddEnumDescriptions_ForeignUnreadableEntry_GetsEmptyNameAndDescription()
     {
         // Given: a schema transformer that writes an unreadable entry before the registration
         await using var host = await TestApi.Start<Order>(options => options

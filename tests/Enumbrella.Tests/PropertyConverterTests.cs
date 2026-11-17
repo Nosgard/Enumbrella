@@ -43,7 +43,7 @@ public class PropertyConverterTests
     }
 
     [Fact]
-    public async Task AddEnumDescriptions_StringPropertyFirst_AddsOnlyNamesToSharedComponent()
+    public async Task AddEnumDescriptions_StringPropertyFirst_AddsOnlyListsToSharedComponent()
     {
         // Given: a property with the string converter declared before a plain one
         await using var registeredHost = await TestApi.Start<StringFirstResponse>(TestApi.Register);
@@ -65,7 +65,7 @@ public class PropertyConverterTests
     }
 
     [Fact]
-    public async Task AddEnumDescriptions_PlainPropertyFirst_AddsOnlyEnumAndNamesToSharedComponent()
+    public async Task AddEnumDescriptions_PlainPropertyFirst_AddsOnlyEnumAndListsToSharedComponent()
     {
         // Given: a plain property declared before one with the string converter
         await using var registeredHost = await TestApi.Start<NumberFirstResponse>(TestApi.Register);
