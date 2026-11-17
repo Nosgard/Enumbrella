@@ -143,9 +143,10 @@ internal static class TestApi
         var descriptions = schema["x-enum-descriptions"]?.AsArray();
 
         Assert.True(count is not null, $"{path} has an enum list extension but no enum");
-        Assert.True(names?.Count == count, $"{path}: x-enum-varnames is not as long as enum");
+        Assert.True(names is not null, $"{path} has an enum list extension but no x-enum-varnames");
+        Assert.True(names.Count == count, $"{path}: x-enum-varnames is not as long as enum");
         Assert.True(
-            schema["x-enumNames"]?.ToJsonString() == names?.ToJsonString(),
+            schema["x-enumNames"]?.ToJsonString() == names.ToJsonString(),
             $"{path}: x-enumNames differs from x-enum-varnames");
         Assert.True(
             descriptions is null || descriptions.Count == count,
