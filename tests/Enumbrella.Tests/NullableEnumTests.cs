@@ -39,7 +39,7 @@ public class NullableEnumTests
     }
 
     [Fact]
-    public async Task AddEnumDescriptions_InlineNullableEnum_EndsItsValuesWithNull()
+    public async Task AddEnumDescriptions_InlineNullableEnum_ListsNullWithEmptyNames()
     {
         // Given: a nullable enum that stays inline
         await using var host =
@@ -48,23 +48,8 @@ public class NullableEnumTests
         // When: the document is generated
         var document = await TestApi.Fetch(host);
 
-        // Then: its value list ends with null
-        var schema = TestApi.Property(document, "NullableStatusResponse", "status");
-
-        Assert.Equal("[0,1,2,null]", schema["enum"]!.ToJsonString());
-    }
-
-    [Fact]
-    public async Task AddEnumDescriptions_InlineNullableEnum_HasEmptyNameForNull()
-    {
-        // Given: a nullable enum that stays inline
-        await using var host =
-            await TestApi.StartInlineEnums<NullableStatusResponse>(TestApi.Register);
-
-        // When: the document is generated
-        var document = await TestApi.Fetch(host);
-
-        // Then: the null entry has an empty name in both name lists and an empty description
+        // Then: the values end with null, which gets an empty name in both lists and an empty
+        // description
         TestApi.AssertEnum(
             TestApi.Property(document, "NullableStatusResponse", "status"),
             "[0,1,2,null]",
