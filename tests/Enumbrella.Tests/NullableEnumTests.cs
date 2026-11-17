@@ -92,10 +92,12 @@ public class NullableEnumTests
         var once = await TestApi.Fetch(onceHost);
         var twice = await TestApi.Fetch(twiceHost);
 
-        // Then: the value list holds one null and the documents match
-        var twiceStatus = TestApi.Property(twice, "NullableStatusResponse", "status");
-
-        Assert.Equal("[0,1,2,null]", twiceStatus["enum"]!.ToJsonString());
+        // Then: the value list holds one null, each list one entry for it, and the documents match
+        TestApi.AssertEnum(
+            TestApi.Property(twice, "NullableStatusResponse", "status"),
+            "[0,1,2,null]",
+            "[\"Pending\",\"Approved\",\"Rejected\",\"\"]",
+            "[\"Waiting for approval\",\"Approved\",\"\",\"\"]");
         Assert.Equal(once.ToJsonString(), twice.ToJsonString());
     }
 

@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using Enumbrella.Sample;
 
 namespace Enumbrella.Tests;
@@ -27,13 +28,15 @@ public class DescriptionTests
         var document = await TestApi.Fetch(host);
 
         // Then: each parsed description matches its source text character for character
-        var schema = TestApi.Schema(document, "SpecialText");
-        var descriptions = schema["x-enum-descriptions"]!.AsArray();
+        var descriptions = new JsonArray(
+            "Size ≥ 10 ✓ café",
+            "**bold** <script>alert(1)</script> \"quoted\" back\\slash\nnext line");
 
-        Assert.Equal("Size ≥ 10 ✓ café", descriptions[0]!.GetValue<string>());
-        Assert.Equal(
-            "**bold** <script>alert(1)</script> \"quoted\" back\\slash\nnext line",
-            descriptions[1]!.GetValue<string>());
+        TestApi.AssertEnum(
+            TestApi.Schema(document, "SpecialText"),
+            "[1,2]",
+            "[\"Size\",\"Markup\"]",
+            descriptions.ToJsonString());
     }
 
     [Fact]
