@@ -10,6 +10,9 @@ public class CustomConverterTests
     public async Task AddEnumDescriptions_CustomConvertersOnTypeAndInOptions_KeepSharedSchema()
     {
         // Given: enums with a converter on the type and in the options, the latter also nullable
+        CountingConverter<ByType>.Reset();
+        CountingConverter<ByOptions>.Reset();
+
         await using var registeredHost = await TestApi.Start<ConvertedResponse>(
             TestApi.Register, AddOptionsConverter);
         await using var unregisteredHost = await TestApi.Start<ConvertedResponse>(
@@ -54,6 +57,8 @@ public class CustomConverterTests
     public async Task AddEnumDescriptions_CustomConvertersOnProperties_KeepSharedSchema()
     {
         // Given: an OrderStatus and an OrderStatus? property, both with a custom converter
+        CountingConverter<OrderStatus>.Reset();
+
         await using var registeredHost =
             await TestApi.Start<PropertyConvertedResponse>(TestApi.Register);
         await using var unregisteredHost = await TestApi.Start<PropertyConvertedResponse>(_ => { });
@@ -71,6 +76,8 @@ public class CustomConverterTests
     public async Task AddEnumDescriptions_CustomConvertersOnProperties_KeepInlineSchema()
     {
         // Given: the same properties in a host that keeps enums inline
+        CountingConverter<OrderStatus>.Reset();
+
         await using var registeredHost =
             await TestApi.StartInlineEnums<PropertyConvertedResponse>(TestApi.Register);
         await using var unregisteredHost =
@@ -89,6 +96,8 @@ public class CustomConverterTests
     public async Task AddEnumDescriptions_NullableEnumWithCustomConverter_KeepsSharedSchema()
     {
         // Given: a nullable enum whose type carries a custom converter
+        CountingConverter<ByType>.Reset();
+
         await using var registeredHost =
             await TestApi.Start<NullableConvertedResponse>(TestApi.Register);
         await using var unregisteredHost = await TestApi.Start<NullableConvertedResponse>(_ => { });
@@ -106,6 +115,8 @@ public class CustomConverterTests
     public async Task AddEnumDescriptions_NullableEnumWithCustomConverter_KeepsInlineSchema()
     {
         // Given: the same nullable enum in a host that keeps enums inline
+        CountingConverter<ByType>.Reset();
+
         await using var registeredHost =
             await TestApi.StartInlineEnums<NullableConvertedResponse>(TestApi.Register);
         await using var unregisteredHost =
@@ -125,6 +136,9 @@ public class CustomConverterTests
     {
         // Given: plain enums with converters on the type and in the options, and a nullable one
         // in a host that keeps enums inline
+        CountingConverter<ByType>.Reset();
+        CountingConverter<ByOptions>.Reset();
+
         await using var registeredHost = await TestApi.StartInlineEnums<TypeAndOptionsResponse>(
             TestApi.Register, AddOptionsConverter);
         await using var unregisteredHost = await TestApi.StartInlineEnums<TypeAndOptionsResponse>(
@@ -180,6 +194,11 @@ public class CustomConverterTests
         where TEnum : struct, Enum
     {
         public static int Calls { get; private set; }
+
+        public static void Reset()
+        {
+            Calls = 0;
+        }
 
         public override TEnum Read(
             ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
