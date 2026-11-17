@@ -149,7 +149,7 @@ internal static class TestApi
             $"{path}: x-enum-varnames has {names.Count} entries, enum has {count}");
 
         var varNames = names.ToJsonString();
-        var enumNames = schema["x-enumNames"]?.ToJsonString();
+        var enumNames = schema["x-enumNames"]?.ToJsonString() ?? "(missing)";
 
         Assert.True(
             enumNames == varNames,
