@@ -113,36 +113,43 @@ internal static class TestApi
         return await Fetch(client, document);
     }
 
+    // Every document passes through here, so a list that does not match its enum fails the
+    // fetch of any test, whichever schema it sits on.
     public static async Task<JsonNode> Fetch(HttpClient client, string document = "v1")
     {
         var json = await client.GetStringAsync($"/openapi/{document}.json");
+        var parsed = JsonNode.Parse(json)!;
 
-        return JsonNode.Parse(json)!;
+        foreach (var schema in Objects(parsed).Where(HasEnumList))
+        {
+            AssertListsMatchEnum(schema);
+        }
+
+        return parsed;
     }
 
-    // Document, EndpointDocument and InlineEnumDocument serve tests whose starting state is the
-    // finished document, such as the list length test. Other tests start a host and fetch.
-    public static async Task<JsonNode> Document<TResponse>(
-        Action<OpenApiOptions> configure, Action<JsonSerializerOptions>? configureJson = null)
+    private static bool HasEnumList(JsonObject schema)
     {
-        await using var app = await Start<TResponse>(configure, configureJson);
-
-        return await Fetch(app);
+        return schema.ContainsKey("x-enum-varnames")
+            || schema.ContainsKey("x-enumNames")
+            || schema.ContainsKey("x-enum-descriptions");
     }
 
-    public static async Task<JsonNode> EndpointDocument(params Action<WebApplication>[] endpoints)
+    private static void AssertListsMatchEnum(JsonObject schema)
     {
-        await using var app = await StartEndpoints(endpoints);
+        var path = schema.GetPath();
+        var count = schema["enum"]?.AsArray().Count;
+        var names = schema["x-enum-varnames"]?.AsArray();
+        var descriptions = schema["x-enum-descriptions"]?.AsArray();
 
-        return await Fetch(app);
-    }
-
-    public static async Task<JsonNode> InlineEnumDocument<TResponse>(
-        Action<OpenApiOptions> configure, Action<JsonSerializerOptions>? configureJson = null)
-    {
-        await using var app = await StartInlineEnums<TResponse>(configure, configureJson);
-
-        return await Fetch(app);
+        Assert.True(count is not null, $"{path} has an enum list extension but no enum");
+        Assert.True(names?.Count == count, $"{path}: x-enum-varnames is not as long as enum");
+        Assert.True(
+            schema["x-enumNames"]?.ToJsonString() == names?.ToJsonString(),
+            $"{path}: x-enumNames differs from x-enum-varnames");
+        Assert.True(
+            descriptions is null || descriptions.Count == count,
+            $"{path}: x-enum-descriptions is not as long as enum");
     }
 
     // Then
