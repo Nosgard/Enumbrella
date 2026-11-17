@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Enumbrella.Sample;
 
@@ -21,8 +20,12 @@ public class CustomConverterTests
         var unregistered = await TestApi.Fetch(unregisteredHost);
 
         // Then: both schemas match and neither converter ran
-        Assert.Equal(Schema(unregistered, "ByType"), Schema(registered, "ByType"));
-        Assert.Equal(Schema(unregistered, "ByOptions"), Schema(registered, "ByOptions"));
+        Assert.Equal(
+            TestApi.Schema(unregistered, "ByType").ToJsonString(),
+            TestApi.Schema(registered, "ByType").ToJsonString());
+        Assert.Equal(
+            TestApi.Schema(unregistered, "ByOptions").ToJsonString(),
+            TestApi.Schema(registered, "ByOptions").ToJsonString());
         Assert.Equal(0, CountingConverter<ByType>.Calls);
         Assert.Equal(0, CountingConverter<ByOptions>.Calls);
     }
@@ -38,7 +41,7 @@ public class CustomConverterTests
         var document = await TestApi.Fetch(host);
 
         // Then: both list their values and both name lists
-        var shade = document["components"]!["schemas"]!["Shade"]!;
+        var shade = TestApi.Schema(document, "Shade");
         var names = "[\"Light\",\"Dark\"]";
 
         TestApi.AssertStatusComponent(document);
@@ -140,11 +143,6 @@ public class CustomConverterTests
     private static void AddOptionsConverter(JsonSerializerOptions options)
     {
         options.Converters.Add(new CountingConverter<ByOptions>());
-    }
-
-    private static string Schema(JsonNode document, string name)
-    {
-        return document["components"]!["schemas"]![name]!.ToJsonString();
     }
 
     [JsonConverter(typeof(CountingConverter<ByType>))]

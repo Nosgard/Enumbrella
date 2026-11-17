@@ -25,7 +25,7 @@ public class SampleApiTests
         var document = await SampleApi.Fetch(sampleApi);
 
         // Then: each string has its C# name and its description at the same position
-        var schema = document["components"]!["schemas"]!["PaymentMethod"]!;
+        var schema = TestApi.Schema(document, "PaymentMethod");
         var descriptions = "[\"Paid by card\",\"Paid on invoice\",\"Paid by bank transfer\"]";
 
         Assert.Equal("[\"card\",\"invoice\",\"bankTransfer\"]", schema["enum"]!.ToJsonString());
@@ -44,7 +44,7 @@ public class SampleApiTests
         var document = await SampleApi.Fetch(sampleApi);
 
         // Then: OrderStatus lists both descriptions and an empty one for Rejected
-        var schema = document["components"]!["schemas"]!["OrderStatus"]!;
+        var schema = TestApi.Schema(document, "OrderStatus");
 
         Assert.Equal(
             "[\"Waiting for approval\",\"Approved\",\"\"]",

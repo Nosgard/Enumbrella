@@ -91,7 +91,7 @@ public class ListLengthTests
     private static List<JsonNode> EnumSchemas(JsonNode[] documents)
     {
         var components = documents
-            .SelectMany(document => document["components"]!["schemas"]!.AsObject())
+            .SelectMany(document => TestApi.Schemas(document))
             .Select(schema => schema.Value!)
             .ToList();
         var properties = components

@@ -1,6 +1,4 @@
-using System.Text.Json.Nodes;
 using Enumbrella.Tests.Descriptions;
-using Microsoft.AspNetCore.Builder;
 
 namespace Enumbrella.Tests;
 
@@ -13,9 +11,11 @@ public class DescriptionTests
         await using var host = await TestApi.Start<StatusDescriptionsResponse>(TestApi.Register);
 
         // When: the document is generated
-        var schema = await Schema(host, "OrderStatus");
+        var document = await TestApi.Fetch(host);
 
         // Then: the description list follows enum and leaves Rejected empty
+        var schema = TestApi.Schema(document, "OrderStatus");
+
         Assert.Equal(
             "[\"Waiting for approval\",\"Approved\",\"\"]",
             schema["x-enum-descriptions"]!.ToJsonString());
@@ -28,9 +28,10 @@ public class DescriptionTests
         await using var host = await TestApi.Start<SpecialTextResponse>(TestApi.Register);
 
         // When: the document is generated and parsed
-        var schema = await Schema(host, "SpecialText");
+        var document = await TestApi.Fetch(host);
 
         // Then: each parsed description matches its source text character for character
+        var schema = TestApi.Schema(document, "SpecialText");
         var descriptions = schema["x-enum-descriptions"]!.AsArray();
 
         Assert.Equal("Size ≥ 10 ✓ café", descriptions[0]!.GetValue<string>());
@@ -46,9 +47,11 @@ public class DescriptionTests
         await using var host = await TestApi.Start<PriorityResponse>(TestApi.Register);
 
         // When: the document is generated
-        var schema = await Schema(host, "Priority");
+        var document = await TestApi.Fetch(host);
 
         // Then: the schema has its name list and no description list
+        var schema = TestApi.Schema(document, "Priority");
+
         Assert.NotNull(schema["x-enum-varnames"]);
         Assert.Null(schema["x-enum-descriptions"]);
     }
@@ -60,9 +63,11 @@ public class DescriptionTests
         await using var host = await TestApi.Start<SwitchResponse>(TestApi.Register);
 
         // When: the document is generated
-        var schema = await Schema(host, "Switch");
+        var document = await TestApi.Fetch(host);
 
         // Then: the value 1 keeps Active's name and its empty description
+        var schema = TestApi.Schema(document, "Switch");
+
         Assert.Equal("[1,2]", schema["enum"]!.ToJsonString());
         Assert.Equal("[\"Active\",\"Disabled\"]", schema["x-enum-varnames"]!.ToJsonString());
         Assert.Equal("[\"\",\"\"]", schema["x-enum-descriptions"]!.ToJsonString());
@@ -75,9 +80,11 @@ public class DescriptionTests
         await using var host = await TestApi.Start<ShippingAndChannelResponse>(TestApi.Register);
 
         // When: the document is generated
-        var schema = await Schema(host, "Shipping");
+        var document = await TestApi.Fetch(host);
 
         // Then: each description stands at the position of its value in enum
+        var schema = TestApi.Schema(document, "Shipping");
+
         Assert.Equal("[1,2,3]", schema["enum"]!.ToJsonString());
         Assert.Equal(
             "[\"Standard delivery\",\"Pickup\",\"Express delivery\"]",
@@ -91,9 +98,11 @@ public class DescriptionTests
         await using var host = await TestApi.Start<ShippingAndChannelResponse>(TestApi.Register);
 
         // When: the document is generated
-        var schema = await Schema(host, "Channel");
+        var document = await TestApi.Fetch(host);
 
         // Then: the null description becomes an empty string
+        var schema = TestApi.Schema(document, "Channel");
+
         Assert.Equal("[\"\",\"By phone\"]", schema["x-enum-descriptions"]!.ToJsonString());
     }
 
@@ -105,9 +114,11 @@ public class DescriptionTests
         await using var host = await TestApi.Start<LabelledResponse>(TestApi.Register);
 
         // When: the document is generated
-        var schema = await Schema(host, "Labelled");
+        var document = await TestApi.Fetch(host);
 
         // Then: the exact text wins, a single derived one counts, anything else stays empty
+        var schema = TestApi.Schema(document, "Labelled");
+
         Assert.Equal(
             "[\"A\",\"A\",\"Translated only\",\"\",\"\"]",
             schema["x-enum-descriptions"]!.ToJsonString());
@@ -120,16 +131,11 @@ public class DescriptionTests
         await using var host = await TestApi.Start<LabelledResponse>(TestApi.Register);
 
         // When: the document is generated
-        var schema = await Schema(host, "Localized");
-
-        // Then: the description list exists and leaves Cash empty
-        Assert.Equal("[\"Translated card\",\"\"]", schema["x-enum-descriptions"]!.ToJsonString());
-    }
-
-    private static async Task<JsonNode> Schema(WebApplication host, string name)
-    {
         var document = await TestApi.Fetch(host);
 
-        return document["components"]!["schemas"]![name]!;
+        // Then: the description list exists and leaves Cash empty
+        var schema = TestApi.Schema(document, "Localized");
+
+        Assert.Equal("[\"Translated card\",\"\"]", schema["x-enum-descriptions"]!.ToJsonString());
     }
 }

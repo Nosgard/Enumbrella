@@ -15,9 +15,9 @@ public class RegistrationTests
         // When: the document is generated
         var document = await TestApi.Fetch(host);
 
-        var schema = document["components"]!["schemas"]!["OrderStatus"]!;
-
         // Then: OrderStatus has no value list
+        var schema = TestApi.Schema(document, "OrderStatus");
+
         Assert.Null(schema["enum"]);
     }
 
@@ -32,9 +32,9 @@ public class RegistrationTests
         var registered = await SampleApi.Fetch(sampleApi);
         var unregistered = await TestApi.Fetch(unregisteredHost);
 
-        var registeredStatus = registered["components"]!["schemas"]!["OrderStatus"]!;
-
         // Then: only the registered document carries x-enum extensions
+        var registeredStatus = TestApi.Schema(registered, "OrderStatus");
+
         Assert.NotNull(registeredStatus["x-enum-varnames"]);
         Assert.DoesNotContain("\"x-enum", unregistered.ToJsonString(), StringComparison.Ordinal);
     }
@@ -72,11 +72,13 @@ public class RegistrationTests
         var declared = BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance
             | BindingFlags.DeclaredOnly;
 
-        // When: its exported types and their public methods are read
-        var type = Assert.Single(assembly.GetExportedTypes());
-        var method = Assert.Single(type.GetMethods(declared));
+        // When: its exported types are read
+        var types = assembly.GetExportedTypes();
 
         // Then: AddEnumDescriptions is the only public entry point
+        var type = Assert.Single(types);
+        var method = Assert.Single(type.GetMethods(declared));
+
         Assert.Equal("Enumbrella.EnumbrellaOpenApiOptionsExtensions", type.FullName);
         Assert.Equal("AddEnumDescriptions", method.Name);
     }
@@ -88,9 +90,10 @@ public class RegistrationTests
         var assembly = typeof(EnumbrellaOpenApiOptionsExtensions).Assembly;
 
         // When: its types are listed
+        var types = assembly.GetTypes();
 
         // Then: none comes from a generated OpenAPI namespace
-        Assert.DoesNotContain(assembly.GetTypes(), type => type.Namespace is { } ns
+        Assert.DoesNotContain(types, type => type.Namespace is { } ns
             && ns.StartsWith("Microsoft.AspNetCore.OpenApi", StringComparison.Ordinal));
     }
 }

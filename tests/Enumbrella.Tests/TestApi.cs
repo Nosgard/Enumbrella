@@ -109,6 +109,12 @@ internal static class TestApi
     public static async Task<JsonNode> Fetch(WebApplication app, string document = "v1")
     {
         using var client = app.GetTestClient();
+
+        return await Fetch(client, document);
+    }
+
+    public static async Task<JsonNode> Fetch(HttpClient client, string document = "v1")
+    {
         var json = await client.GetStringAsync($"/openapi/{document}.json");
 
         return JsonNode.Parse(json)!;
@@ -141,9 +147,34 @@ internal static class TestApi
 
     // Then
 
+    public static JsonObject Schemas(JsonNode document)
+    {
+        return document["components"]!["schemas"]!.AsObject();
+    }
+
+    public static JsonNode Schema(JsonNode document, string name)
+    {
+        return Schemas(document)[name]!;
+    }
+
+    public static JsonNode Property(JsonNode document, string component, string property)
+    {
+        return Schema(document, component)["properties"]![property]!;
+    }
+
+    public static IEnumerable<JsonObject> Objects(JsonNode? node)
+    {
+        return node switch
+        {
+            JsonObject obj => [obj, .. obj.SelectMany(keyword => Objects(keyword.Value))],
+            JsonArray array => array.SelectMany(Objects),
+            _ => [],
+        };
+    }
+
     public static void AssertStatusComponent(JsonNode document)
     {
-        var schema = document["components"]!["schemas"]!["OrderStatus"]!;
+        var schema = Schema(document, "OrderStatus");
         var names = "[\"Pending\",\"Approved\",\"Rejected\"]";
 
         Assert.Equal("[0,1,2]", schema["enum"]!.ToJsonString());

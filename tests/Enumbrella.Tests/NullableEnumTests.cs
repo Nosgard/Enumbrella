@@ -31,9 +31,11 @@ public class NullableEnumTests
 
         // Then: the property keeps its oneOf of null and the reference in both
         var expected = "[{\"type\":\"null\"},{\"$ref\":\"#/components/schemas/OrderStatus\"}]";
+        var unregisteredStatus = TestApi.Property(unregistered, "NullableStatusResponse", "status");
+        var registeredStatus = TestApi.Property(registered, "NullableStatusResponse", "status");
 
-        Assert.Equal(expected, StatusProperty(unregistered)["oneOf"]!.ToJsonString());
-        Assert.Equal(expected, StatusProperty(registered)["oneOf"]!.ToJsonString());
+        Assert.Equal(expected, unregisteredStatus["oneOf"]!.ToJsonString());
+        Assert.Equal(expected, registeredStatus["oneOf"]!.ToJsonString());
     }
 
     [Fact]
@@ -47,7 +49,9 @@ public class NullableEnumTests
         var document = await TestApi.Fetch(host);
 
         // Then: its value list ends with null
-        Assert.Equal("[0,1,2,null]", StatusProperty(document)["enum"]!.ToJsonString());
+        var schema = TestApi.Property(document, "NullableStatusResponse", "status");
+
+        Assert.Equal("[0,1,2,null]", schema["enum"]!.ToJsonString());
     }
 
     [Fact]
@@ -61,7 +65,7 @@ public class NullableEnumTests
         var document = await TestApi.Fetch(host);
 
         // Then: the null entry has an empty name in both name lists
-        var schema = StatusProperty(document);
+        var schema = TestApi.Property(document, "NullableStatusResponse", "status");
         var names = "[\"Pending\",\"Approved\",\"Rejected\",\"\"]";
 
         Assert.Equal(names, schema["x-enum-varnames"]!.ToJsonString());
@@ -83,9 +87,11 @@ public class NullableEnumTests
 
         // Then: both keep the type list the host wrote
         var expected = "[\"null\",\"integer\"]";
+        var unregisteredStatus = TestApi.Property(unregistered, "NullableStatusResponse", "status");
+        var registeredStatus = TestApi.Property(registered, "NullableStatusResponse", "status");
 
-        Assert.Equal(expected, StatusProperty(unregistered)["type"]!.ToJsonString());
-        Assert.Equal(expected, StatusProperty(registered)["type"]!.ToJsonString());
+        Assert.Equal(expected, unregisteredStatus["type"]!.ToJsonString());
+        Assert.Equal(expected, registeredStatus["type"]!.ToJsonString());
     }
 
     [Fact]
@@ -102,7 +108,9 @@ public class NullableEnumTests
         var twice = await TestApi.Fetch(twiceHost);
 
         // Then: the value list holds one null and the documents match
-        Assert.Equal("[0,1,2,null]", StatusProperty(twice)["enum"]!.ToJsonString());
+        var twiceStatus = TestApi.Property(twice, "NullableStatusResponse", "status");
+
+        Assert.Equal("[0,1,2,null]", twiceStatus["enum"]!.ToJsonString());
         Assert.Equal(once.ToJsonString(), twice.ToJsonString());
     }
 
@@ -160,16 +168,9 @@ public class NullableEnumTests
         AssertOneStatusComponent(document);
     }
 
-    private static JsonNode StatusProperty(JsonNode document)
-    {
-        var response = document["components"]!["schemas"]!["NullableStatusResponse"]!;
-
-        return response["properties"]!["status"]!;
-    }
-
     private static void AssertOneStatusComponent(JsonNode document)
     {
-        var schemas = document["components"]!["schemas"]!.AsObject();
+        var schemas = TestApi.Schemas(document);
 
         Assert.Single(
             schemas, entry => entry.Key.StartsWith("OrderStatus", StringComparison.Ordinal));

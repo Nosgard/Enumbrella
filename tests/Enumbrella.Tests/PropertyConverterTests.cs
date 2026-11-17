@@ -15,7 +15,7 @@ public class PropertyConverterTests
         var document = await TestApi.Fetch(host);
 
         // Then: the strings in enum and both name lists match the member names
-        var schema = Property(document, "plain");
+        var schema = TestApi.Property(document, "StringPropertyResponse", "plain");
         var names = "[\"Pending\",\"Approved\",\"Rejected\"]";
 
         Assert.Equal(names, schema["enum"]!.ToJsonString());
@@ -34,7 +34,7 @@ public class PropertyConverterTests
         var document = await TestApi.Fetch(host);
 
         // Then: each string keeps its member name and null gets an empty name
-        var schema = Property(document, "optional");
+        var schema = TestApi.Property(document, "StringPropertyResponse", "optional");
         var values = "[\"Pending\",\"Approved\",\"Rejected\",null]";
         var names = "[\"Pending\",\"Approved\",\"Rejected\",\"\"]";
 
@@ -55,7 +55,7 @@ public class PropertyConverterTests
         var unregistered = await TestApi.Fetch(unregisteredHost);
 
         // Then: the names follow the strings, and nothing else differs
-        var status = registered["components"]!["schemas"]!["OrderStatus"]!;
+        var status = TestApi.Schema(registered, "OrderStatus");
         var names = "[\"Pending\",\"Approved\",\"Rejected\"]";
 
         Assert.Equal(names, status["x-enum-varnames"]!.ToJsonString());
@@ -83,7 +83,7 @@ public class PropertyConverterTests
     {
         var copy = document.DeepClone();
 
-        foreach (var schema in Objects(copy).ToList())
+        foreach (var schema in TestApi.Objects(copy).ToList())
         {
             var isInteger = schema["type"]?.ToJsonString() == "\"integer\"";
             var added = schema
@@ -96,22 +96,5 @@ public class PropertyConverterTests
         }
 
         return copy;
-    }
-
-    private static IEnumerable<JsonObject> Objects(JsonNode? node)
-    {
-        return node switch
-        {
-            JsonObject obj => [obj, .. obj.SelectMany(keyword => Objects(keyword.Value))],
-            JsonArray array => array.SelectMany(Objects),
-            _ => [],
-        };
-    }
-
-    private static JsonNode Property(JsonNode document, string name)
-    {
-        var response = document["components"]!["schemas"]!["StringPropertyResponse"]!;
-
-        return response["properties"]![name]!;
     }
 }

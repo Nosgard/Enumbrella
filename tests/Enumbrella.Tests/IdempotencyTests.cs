@@ -28,9 +28,9 @@ public class IdempotencyTests
         // When: the document is generated
         var document = await TestApi.Fetch(host);
 
-        var schemas = document["components"]!["schemas"]!.AsObject();
-
         // Then: both share one component that lists each name once
+        var schemas = TestApi.Schemas(document);
+
         Assert.Equal(
             ["OrderStatus", "TwoStatusesResponse"], schemas.Select(entry => entry.Key).Order());
         TestApi.AssertStatusComponent(document);

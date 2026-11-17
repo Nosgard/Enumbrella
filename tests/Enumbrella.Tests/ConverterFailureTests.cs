@@ -58,14 +58,14 @@ public class ConverterFailureTests
         var document = await TestApi.Fetch(host);
 
         // Then: the unreadable entry gets an empty name and the readable one keeps its name
-        var schema = document["components"]!["schemas"]!["OrderStatus"]!;
+        var schema = TestApi.Schema(document, "OrderStatus");
 
         Assert.Equal("[\"\",\"Pending\"]", schema["x-enum-varnames"]!.ToJsonString());
     }
 
     private static void AssertUntouched(JsonNode document, params string[] names)
     {
-        var schemas = document["components"]!["schemas"]!;
+        var schemas = TestApi.Schemas(document);
 
         Assert.All(names, name => Assert.DoesNotContain(
             schemas[name]!.AsObject(),

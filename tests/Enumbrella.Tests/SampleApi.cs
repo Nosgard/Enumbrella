@@ -25,8 +25,7 @@ internal static class SampleApi
     public static async Task<JsonNode> Fetch(WebApplicationFactory<Program> sampleApi)
     {
         using var client = sampleApi.CreateClient();
-        var json = await client.GetStringAsync("/openapi/v1.json");
 
-        return JsonNode.Parse(json)!;
+        return await TestApi.Fetch(client);
     }
 }
