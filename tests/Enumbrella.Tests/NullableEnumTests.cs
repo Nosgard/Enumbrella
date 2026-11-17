@@ -1,18 +1,14 @@
 using System.Text.Json.Nodes;
-using Microsoft.AspNetCore.OpenApi;
 
 namespace Enumbrella.Tests;
 
 public class NullableEnumTests
 {
-    private static readonly Action<OpenApiOptions> Register =
-        options => options.AddEnumDescriptions();
-
     [Fact]
     public async Task AddEnumDescriptions_NullablePropertyAlone_ListsValuesOnComponent()
     {
         // Given: a nullable property as the only use of OrderStatus
-        await using var host = await TestApi.Start<NullableStatusResponse>(Register);
+        await using var host = await TestApi.Start<NullableStatusResponse>(TestApi.Register);
 
         // When: the document is generated
         var document = await TestApi.Fetch(host);
@@ -25,7 +21,8 @@ public class NullableEnumTests
     public async Task AddEnumDescriptions_NullablePropertyWithAndWithoutRegistration_KeepsItsOneOf()
     {
         // Given: one host with the registration and one without
-        await using var registeredHost = await TestApi.Start<NullableStatusResponse>(Register);
+        await using var registeredHost =
+            await TestApi.Start<NullableStatusResponse>(TestApi.Register);
         await using var unregisteredHost = await TestApi.Start<NullableStatusResponse>(_ => { });
 
         // When: both documents are generated
@@ -43,7 +40,8 @@ public class NullableEnumTests
     public async Task AddEnumDescriptions_InlineNullableEnum_EndsItsValuesWithNull()
     {
         // Given: a nullable enum that stays inline
-        await using var host = await TestApi.StartInlineEnums<NullableStatusResponse>(Register);
+        await using var host =
+            await TestApi.StartInlineEnums<NullableStatusResponse>(TestApi.Register);
 
         // When: the document is generated
         var document = await TestApi.Fetch(host);
@@ -56,7 +54,8 @@ public class NullableEnumTests
     public async Task AddEnumDescriptions_InlineNullableEnum_HasEmptyNameForNull()
     {
         // Given: a nullable enum that stays inline
-        await using var host = await TestApi.StartInlineEnums<NullableStatusResponse>(Register);
+        await using var host =
+            await TestApi.StartInlineEnums<NullableStatusResponse>(TestApi.Register);
 
         // When: the document is generated
         var document = await TestApi.Fetch(host);
@@ -74,7 +73,7 @@ public class NullableEnumTests
     {
         // Given: inline enums in one host with the registration and one without
         await using var registeredHost =
-            await TestApi.StartInlineEnums<NullableStatusResponse>(Register);
+            await TestApi.StartInlineEnums<NullableStatusResponse>(TestApi.Register);
         await using var unregisteredHost =
             await TestApi.StartInlineEnums<NullableStatusResponse>(_ => { });
 
@@ -93,9 +92,10 @@ public class NullableEnumTests
     public async Task AddEnumDescriptions_InlineNullableEnumRegisteredTwice_KeepsOneNull()
     {
         // Given: inline enums in one host registering once and one twice
-        await using var onceHost = await TestApi.StartInlineEnums<NullableStatusResponse>(Register);
-        await using var twiceHost = await TestApi.StartInlineEnums<NullableStatusResponse>(
-            options => options.AddEnumDescriptions().AddEnumDescriptions());
+        await using var onceHost =
+            await TestApi.StartInlineEnums<NullableStatusResponse>(TestApi.Register);
+        await using var twiceHost =
+            await TestApi.StartInlineEnums<NullableStatusResponse>(TestApi.RegisterTwice);
 
         // When: both documents are generated
         var once = await TestApi.Fetch(onceHost);
@@ -110,7 +110,7 @@ public class NullableEnumTests
     public async Task AddEnumDescriptions_NullablePropertyComesFirst_YieldsOneComponent()
     {
         // Given: a nullable property declared before a plain one of the same enum
-        await using var host = await TestApi.Start<NullableFirstResponse>(Register);
+        await using var host = await TestApi.Start<NullableFirstResponse>(TestApi.Register);
 
         // When: the document is generated
         var document = await TestApi.Fetch(host);
@@ -123,7 +123,7 @@ public class NullableEnumTests
     public async Task AddEnumDescriptions_NullablePropertyComesLast_YieldsOneComponent()
     {
         // Given: a plain property declared before a nullable one of the same enum
-        await using var host = await TestApi.Start<PlainFirstResponse>(Register);
+        await using var host = await TestApi.Start<PlainFirstResponse>(TestApi.Register);
 
         // When: the document is generated
         var document = await TestApi.Fetch(host);

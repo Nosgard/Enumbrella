@@ -2,20 +2,16 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Enumbrella.Sample;
-using Microsoft.AspNetCore.OpenApi;
 
 namespace Enumbrella.Tests;
 
 public class ConverterFailureTests
 {
-    private static readonly Action<OpenApiOptions> Register =
-        options => options.AddEnumDescriptions();
-
     [Fact]
     public async Task AddEnumDescriptions_ConverterCannotWriteValues_LeavesSchemaUntouched()
     {
         // Given: two enums whose converters throw on every write
-        await using var host = await TestApi.Start<UnwritableResponse>(Register);
+        await using var host = await TestApi.Start<UnwritableResponse>(TestApi.Register);
 
         // When: the document is generated
         var document = await TestApi.Fetch(host);
@@ -28,7 +24,7 @@ public class ConverterFailureTests
     public async Task AddEnumDescriptions_ConverterCannotReadValues_LeavesSchemaUntouched()
     {
         // Given: two enums whose converters throw on every read
-        await using var host = await TestApi.Start<UnreadableResponse>(Register);
+        await using var host = await TestApi.Start<UnreadableResponse>(TestApi.Register);
 
         // When: the document is generated
         var document = await TestApi.Fetch(host);
@@ -41,7 +37,7 @@ public class ConverterFailureTests
     public async Task AddEnumDescriptions_ConverterReadsUndeclaredMember_LeavesSchemaUntouched()
     {
         // Given: a converter that reads each value as an undeclared member
-        await using var host = await TestApi.Start<UndeclaredResponse>(Register);
+        await using var host = await TestApi.Start<UndeclaredResponse>(TestApi.Register);
 
         // When: the document is generated
         var document = await TestApi.Fetch(host);

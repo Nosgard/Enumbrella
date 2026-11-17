@@ -1,19 +1,15 @@
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.OpenApi;
 
 namespace Enumbrella.Tests;
 
 public class ValueOrderTests
 {
-    private static readonly Action<OpenApiOptions> Register =
-        options => options.AddEnumDescriptions();
-
     [Fact]
     public async Task AddEnumDescriptions_UnsortedEnum_YieldsAscendingValuesWithMatchingNames()
     {
         // Given: an enum declared out of value order
-        await using var host = await TestApi.Start<PriorityResponse>(Register);
+        await using var host = await TestApi.Start<PriorityResponse>(TestApi.Register);
 
         // When: the document is generated
         var schema = await Schema(host, "Priority");
@@ -27,7 +23,7 @@ public class ValueOrderTests
     public async Task AddEnumDescriptions_NegativeValues_ComeFirstWithMatchingNames()
     {
         // Given: an enum with negative values
-        await using var host = await TestApi.Start<TemperatureResponse>(Register);
+        await using var host = await TestApi.Start<TemperatureResponse>(TestApi.Register);
 
         // When: the document is generated
         var schema = await Schema(host, "Temperature");
@@ -42,7 +38,7 @@ public class ValueOrderTests
     public async Task AddEnumDescriptions_ByteEnum_YieldsItsValuesWithMatchingNames()
     {
         // Given: an enum based on byte
-        await using var host = await TestApi.Start<LevelResponse>(Register);
+        await using var host = await TestApi.Start<LevelResponse>(TestApi.Register);
 
         // When: the document is generated
         var schema = await Schema(host, "Level");
@@ -56,7 +52,7 @@ public class ValueOrderTests
     public async Task AddEnumDescriptions_LongEnum_YieldsValuesBeyondIntRangeWithMatchingNames()
     {
         // Given: an enum based on long with a value beyond the int range
-        await using var host = await TestApi.Start<DistanceResponse>(Register);
+        await using var host = await TestApi.Start<DistanceResponse>(TestApi.Register);
 
         // When: the document is generated
         var schema = await Schema(host, "Distance");

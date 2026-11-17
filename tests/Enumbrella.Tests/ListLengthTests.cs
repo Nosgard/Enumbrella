@@ -1,15 +1,11 @@
 using System.Text.Json.Nodes;
 using Enumbrella.Sample;
 using Enumbrella.Tests.Descriptions;
-using Microsoft.AspNetCore.OpenApi;
 
 namespace Enumbrella.Tests;
 
 public class ListLengthTests
 {
-    private static readonly Action<OpenApiOptions> Register =
-        options => options.AddEnumDescriptions();
-
     [Fact]
     public async Task AddEnumDescriptions_EveryEnumSchema_HasEveryListAsLongAsEnum()
     {
@@ -51,18 +47,18 @@ public class ListLengthTests
         return
         [
             await SampleApi.Document(),
-            await TestApi.Document<Order>(Register),
-            await TestApi.Document<PriorityResponse>(Register),
-            await TestApi.Document<TemperatureResponse>(Register),
-            await TestApi.Document<LevelResponse>(Register),
-            await TestApi.Document<DistanceResponse>(Register),
-            await TestApi.Document<NullableStatusResponse>(Register),
-            await TestApi.Document<ScopeResponse>(Register),
-            await TestApi.Document<TwoStatusesResponse>(Register),
-            await TestApi.Document<NullableFirstResponse>(Register),
-            await TestApi.Document<PlainFirstResponse>(Register),
-            await TestApi.Document<StringFirstResponse>(Register),
-            await TestApi.Document<NumberFirstResponse>(Register),
+            await TestApi.Document<Order>(TestApi.Register),
+            await TestApi.Document<PriorityResponse>(TestApi.Register),
+            await TestApi.Document<TemperatureResponse>(TestApi.Register),
+            await TestApi.Document<LevelResponse>(TestApi.Register),
+            await TestApi.Document<DistanceResponse>(TestApi.Register),
+            await TestApi.Document<NullableStatusResponse>(TestApi.Register),
+            await TestApi.Document<ScopeResponse>(TestApi.Register),
+            await TestApi.Document<TwoStatusesResponse>(TestApi.Register),
+            await TestApi.Document<NullableFirstResponse>(TestApi.Register),
+            await TestApi.Document<PlainFirstResponse>(TestApi.Register),
+            await TestApi.Document<StringFirstResponse>(TestApi.Register),
+            await TestApi.Document<NumberFirstResponse>(TestApi.Register),
         ];
     }
 
@@ -70,11 +66,11 @@ public class ListLengthTests
     {
         return
         [
-            await TestApi.Document<StatusDescriptionsResponse>(Register),
-            await TestApi.Document<SpecialTextResponse>(Register),
-            await TestApi.Document<SwitchResponse>(Register),
-            await TestApi.Document<ShippingAndChannelResponse>(Register),
-            await TestApi.Document<LabelledResponse>(Register),
+            await TestApi.Document<StatusDescriptionsResponse>(TestApi.Register),
+            await TestApi.Document<SpecialTextResponse>(TestApi.Register),
+            await TestApi.Document<SwitchResponse>(TestApi.Register),
+            await TestApi.Document<ShippingAndChannelResponse>(TestApi.Register),
+            await TestApi.Document<LabelledResponse>(TestApi.Register),
         ];
     }
 
@@ -85,8 +81,8 @@ public class ListLengthTests
             await TestApi.Document<Order>(options => options
                 .AddSchemaTransformer(TestApi.WriteUnreadableStatusEntry)
                 .AddEnumDescriptions()),
-            await TestApi.InlineEnumDocument<NullableStatusResponse>(Register),
-            await TestApi.InlineEnumDocument<StringPropertyResponse>(Register),
+            await TestApi.InlineEnumDocument<NullableStatusResponse>(TestApi.Register),
+            await TestApi.InlineEnumDocument<StringPropertyResponse>(TestApi.Register),
             await TestApi.EndpointDocument(TestApi.MapNullableStatus, TestApi.MapPlainStatus),
             await TestApi.EndpointDocument(TestApi.MapPlainStatus, TestApi.MapNullableStatus),
         ];

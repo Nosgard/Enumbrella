@@ -2,21 +2,17 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Enumbrella.Sample;
-using Microsoft.AspNetCore.OpenApi;
 
 namespace Enumbrella.Tests;
 
 public class CustomConverterTests
 {
-    private static readonly Action<OpenApiOptions> Register =
-        options => options.AddEnumDescriptions();
-
     [Fact]
     public async Task AddEnumDescriptions_CustomConvertersOnTypeAndInOptions_KeepSharedSchema()
     {
         // Given: enums with a converter on the type and in the options, the latter also nullable
         await using var registeredHost = await TestApi.Start<ConvertedResponse>(
-            Register, AddOptionsConverter);
+            TestApi.Register, AddOptionsConverter);
         await using var unregisteredHost = await TestApi.Start<ConvertedResponse>(
             _ => { }, AddOptionsConverter);
 
@@ -36,7 +32,7 @@ public class CustomConverterTests
     {
         // Given: an integer enum and a string enum next to enums with custom converters
         await using var host = await TestApi.Start<ConvertedResponse>(
-            Register, AddOptionsConverter);
+            TestApi.Register, AddOptionsConverter);
 
         // When: the document is generated
         var document = await TestApi.Fetch(host);
@@ -55,7 +51,8 @@ public class CustomConverterTests
     public async Task AddEnumDescriptions_CustomConvertersOnProperties_KeepSharedSchema()
     {
         // Given: an OrderStatus and an OrderStatus? property, both with a custom converter
-        await using var registeredHost = await TestApi.Start<PropertyConvertedResponse>(Register);
+        await using var registeredHost =
+            await TestApi.Start<PropertyConvertedResponse>(TestApi.Register);
         await using var unregisteredHost = await TestApi.Start<PropertyConvertedResponse>(_ => { });
 
         // When: the document is generated with and without the registration
@@ -72,7 +69,7 @@ public class CustomConverterTests
     {
         // Given: the same properties in a host that keeps enums inline
         await using var registeredHost =
-            await TestApi.StartInlineEnums<PropertyConvertedResponse>(Register);
+            await TestApi.StartInlineEnums<PropertyConvertedResponse>(TestApi.Register);
         await using var unregisteredHost =
             await TestApi.StartInlineEnums<PropertyConvertedResponse>(_ => { });
 
@@ -89,7 +86,8 @@ public class CustomConverterTests
     public async Task AddEnumDescriptions_NullableEnumWithCustomConverter_KeepsSharedSchema()
     {
         // Given: a nullable enum whose type carries a custom converter
-        await using var registeredHost = await TestApi.Start<NullableConvertedResponse>(Register);
+        await using var registeredHost =
+            await TestApi.Start<NullableConvertedResponse>(TestApi.Register);
         await using var unregisteredHost = await TestApi.Start<NullableConvertedResponse>(_ => { });
 
         // When: the document is generated with and without the registration
@@ -106,7 +104,7 @@ public class CustomConverterTests
     {
         // Given: the same nullable enum in a host that keeps enums inline
         await using var registeredHost =
-            await TestApi.StartInlineEnums<NullableConvertedResponse>(Register);
+            await TestApi.StartInlineEnums<NullableConvertedResponse>(TestApi.Register);
         await using var unregisteredHost =
             await TestApi.StartInlineEnums<NullableConvertedResponse>(_ => { });
 
@@ -125,7 +123,7 @@ public class CustomConverterTests
         // Given: plain enums with converters on the type and in the options, and a nullable one
         // in a host that keeps enums inline
         await using var registeredHost = await TestApi.StartInlineEnums<TypeAndOptionsResponse>(
-            Register, AddOptionsConverter);
+            TestApi.Register, AddOptionsConverter);
         await using var unregisteredHost = await TestApi.StartInlineEnums<TypeAndOptionsResponse>(
             _ => { }, AddOptionsConverter);
 

@@ -1,18 +1,15 @@
 using System.Text.Json.Nodes;
-using Microsoft.AspNetCore.OpenApi;
 
 namespace Enumbrella.Tests;
 
 public class PropertyConverterTests
 {
-    private static readonly Action<OpenApiOptions> Register =
-        options => options.AddEnumDescriptions();
-
     [Fact]
     public async Task AddEnumDescriptions_StringConverterOnProperty_NamesEachStringValue()
     {
         // Given: a JsonStringEnumConverter on an inline OrderStatus property
-        await using var host = await TestApi.StartInlineEnums<StringPropertyResponse>(Register);
+        await using var host =
+            await TestApi.StartInlineEnums<StringPropertyResponse>(TestApi.Register);
 
         // When: the document is generated
         var document = await TestApi.Fetch(host);
@@ -30,7 +27,8 @@ public class PropertyConverterTests
     public async Task AddEnumDescriptions_StringConverterOnNullableProperty_GivesNullEmptyName()
     {
         // Given: a JsonStringEnumConverter on an inline OrderStatus? property
-        await using var host = await TestApi.StartInlineEnums<StringPropertyResponse>(Register);
+        await using var host =
+            await TestApi.StartInlineEnums<StringPropertyResponse>(TestApi.Register);
 
         // When: the document is generated
         var document = await TestApi.Fetch(host);
@@ -49,7 +47,7 @@ public class PropertyConverterTests
     public async Task AddEnumDescriptions_StringPropertyFirst_AddsOnlyNamesToSharedComponent()
     {
         // Given: a property with the string converter declared before a plain one
-        await using var registeredHost = await TestApi.Start<StringFirstResponse>(Register);
+        await using var registeredHost = await TestApi.Start<StringFirstResponse>(TestApi.Register);
         await using var unregisteredHost = await TestApi.Start<StringFirstResponse>(_ => { });
 
         // When: the document is generated with and without the registration
@@ -69,7 +67,7 @@ public class PropertyConverterTests
     public async Task AddEnumDescriptions_PlainPropertyFirst_AddsOnlyEnumAndNamesToSharedComponent()
     {
         // Given: a plain property declared before one with the string converter
-        await using var registeredHost = await TestApi.Start<NumberFirstResponse>(Register);
+        await using var registeredHost = await TestApi.Start<NumberFirstResponse>(TestApi.Register);
         await using var unregisteredHost = await TestApi.Start<NumberFirstResponse>(_ => { });
 
         // When: the document is generated with and without the registration

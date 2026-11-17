@@ -61,7 +61,7 @@ public class DocumentScopeTests
         return TestApi.Start(
             configureJson: null,
             TestApi.MapResponse<ScopeResponse>,
-            ("v1", options => options.AddEnumDescriptions()),
+            ("v1", TestApi.Register),
             ("v2", withoutRegistration));
     }
 }
