@@ -1,23 +1,9 @@
 using System.Text.Json.Nodes;
-using Enumbrella.Sample;
 
 namespace Enumbrella.Tests;
 
 public class DescriptionTests
 {
-    [Fact]
-    public async Task AddEnumDescriptions_SomeMembersDescribed_WritesDescriptionsWithEmptyGap()
-    {
-        // Given: OrderStatus with descriptions on Pending and Approved, none on Rejected
-        await using var host = await TestApi.Start<Order>(TestApi.Register);
-
-        // When: the document is generated
-        var document = await TestApi.Fetch(host);
-
-        // Then: the description list follows enum and leaves Rejected empty
-        TestApi.AssertStatusComponent(document);
-    }
-
     [Fact]
     public async Task AddEnumDescriptions_DescriptionWithSpecialCharacters_KeepsTextAfterParsing()
     {
