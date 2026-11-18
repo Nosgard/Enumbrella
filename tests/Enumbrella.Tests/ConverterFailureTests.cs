@@ -67,10 +67,8 @@ public class ConverterFailureTests
 
     private static void AssertUntouched(JsonNode document, params string[] names)
     {
-        var schemas = TestApi.Schemas(document);
-
         Assert.All(names, name => Assert.DoesNotContain(
-            schemas[name]!.AsObject(),
+            TestApi.Schema(document, name).AsObject(),
             property => property.Key == "enum"
                 || property.Key.StartsWith("x-enum", StringComparison.Ordinal)));
     }
