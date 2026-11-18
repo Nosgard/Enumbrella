@@ -22,7 +22,11 @@ public class CustomConverterTests
         var registered = await TestApi.Fetch(registeredHost);
         var unregistered = await TestApi.Fetch(unregisteredHost);
 
-        // Then: both documents match and neither converter ran
+        // Then: ByType and ByOptions are components, both documents match and neither converter ran
+        var schemas = TestApi.Schemas(registered);
+
+        Assert.Contains("ByType", schemas);
+        Assert.Contains("ByOptions", schemas);
         Assert.Equal(unregistered.ToJsonString(), registered.ToJsonString());
         Assert.Equal(0, CountingConverter<ByType>.Calls);
         Assert.Equal(0, CountingConverter<ByOptions>.Calls);
@@ -65,7 +69,8 @@ public class CustomConverterTests
         var registered = await TestApi.Fetch(registeredHost);
         var unregistered = await TestApi.Fetch(unregisteredHost);
 
-        // Then: both documents match and the converter never ran
+        // Then: OrderStatus is a component, both documents match and the converter never ran
+        Assert.Contains("OrderStatus", TestApi.Schemas(registered));
         Assert.Equal(unregistered.ToJsonString(), registered.ToJsonString());
         Assert.Equal(0, CountingConverter<OrderStatus>.Calls);
     }
@@ -104,7 +109,8 @@ public class CustomConverterTests
         var registered = await TestApi.Fetch(registeredHost);
         var unregistered = await TestApi.Fetch(unregisteredHost);
 
-        // Then: both documents match and the converter never ran
+        // Then: ByType is a component, both documents match and the converter never ran
+        Assert.Contains("ByType", TestApi.Schemas(registered));
         Assert.Equal(unregistered.ToJsonString(), registered.ToJsonString());
         Assert.Equal(0, CountingConverter<ByType>.Calls);
     }
