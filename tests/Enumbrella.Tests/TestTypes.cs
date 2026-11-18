@@ -30,6 +30,13 @@ internal enum Distance : long
     Far = 10_000_000_000,
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
+internal enum Shade
+{
+    Light = 1,
+    Dark = 2,
+}
+
 internal sealed record PriorityResponse(Priority Priority);
 
 internal sealed record TemperatureResponse(Temperature Temperature);

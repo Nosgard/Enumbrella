@@ -168,13 +168,6 @@ public class CustomConverterTests
         One = 1,
     }
 
-    [JsonConverter(typeof(JsonStringEnumConverter))]
-    internal enum Shade
-    {
-        Light = 1,
-        Dark = 2,
-    }
-
     internal sealed record ConvertedResponse(
         ByType ByType, ByOptions ByOptions, ByOptions? Optional, OrderStatus Status, Shade Shade);
 
