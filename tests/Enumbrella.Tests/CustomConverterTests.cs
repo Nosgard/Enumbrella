@@ -13,22 +13,17 @@ public class CustomConverterTests
         CountingConverter<ByType>.Reset();
         CountingConverter<ByOptions>.Reset();
 
-        await using var registeredHost = await TestApi.Start<ConvertedResponse>(
+        await using var registeredHost = await TestApi.Start<TypeAndOptionsResponse>(
             TestApi.Register, AddOptionsConverter);
-        await using var unregisteredHost = await TestApi.Start<ConvertedResponse>(
+        await using var unregisteredHost = await TestApi.Start<TypeAndOptionsResponse>(
             _ => { }, AddOptionsConverter);
 
         // When: the document is generated with and without the registration
         var registered = await TestApi.Fetch(registeredHost);
         var unregistered = await TestApi.Fetch(unregisteredHost);
 
-        // Then: both schemas match and neither converter ran
-        Assert.Equal(
-            TestApi.Schema(unregistered, "ByType").ToJsonString(),
-            TestApi.Schema(registered, "ByType").ToJsonString());
-        Assert.Equal(
-            TestApi.Schema(unregistered, "ByOptions").ToJsonString(),
-            TestApi.Schema(registered, "ByOptions").ToJsonString());
+        // Then: both documents match and neither converter ran
+        Assert.Equal(unregistered.ToJsonString(), registered.ToJsonString());
         Assert.Equal(0, CountingConverter<ByType>.Calls);
         Assert.Equal(0, CountingConverter<ByOptions>.Calls);
     }
