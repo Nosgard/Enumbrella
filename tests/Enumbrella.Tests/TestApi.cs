@@ -204,4 +204,13 @@ internal static class TestApi
             "[\"Pending\",\"Approved\",\"Rejected\"]",
             "[\"Waiting for approval\",\"Approved\",\"\"]");
     }
+
+    // Checks that none of the named components carries enum or an x-enum extension.
+    public static void AssertUntouched(JsonNode document, params string[] names)
+    {
+        Assert.All(names, name => Assert.DoesNotContain(
+            Schema(document, name).AsObject(),
+            property => property.Key == "enum"
+                || property.Key.StartsWith("x-enum", StringComparison.Ordinal)));
+    }
 }

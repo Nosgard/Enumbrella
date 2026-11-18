@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Enumbrella.Sample;
 
@@ -17,7 +16,7 @@ public class ConverterFailureTests
         var document = await TestApi.Fetch(host);
 
         // Then: neither schema gets a value list or a name list
-        AssertUntouched(document, "UnsupportedOnWrite", "RejectedOnWrite");
+        TestApi.AssertUntouched(document, "UnsupportedOnWrite", "RejectedOnWrite");
     }
 
     [Fact]
@@ -30,7 +29,7 @@ public class ConverterFailureTests
         var document = await TestApi.Fetch(host);
 
         // Then: neither schema gets a value list or a name list
-        AssertUntouched(document, "RejectedOnRead", "UnsupportedOnRead");
+        TestApi.AssertUntouched(document, "RejectedOnRead", "UnsupportedOnRead");
     }
 
     [Fact]
@@ -43,7 +42,7 @@ public class ConverterFailureTests
         var document = await TestApi.Fetch(host);
 
         // Then: the schema gets no value list and no name list
-        AssertUntouched(document, "UndeclaredOnRead");
+        TestApi.AssertUntouched(document, "UndeclaredOnRead");
     }
 
     [Fact]
@@ -63,14 +62,6 @@ public class ConverterFailureTests
             "[\"unknown\",0]",
             "[\"\",\"Pending\"]",
             "[\"\",\"Waiting for approval\"]");
-    }
-
-    private static void AssertUntouched(JsonNode document, params string[] names)
-    {
-        Assert.All(names, name => Assert.DoesNotContain(
-            TestApi.Schema(document, name).AsObject(),
-            property => property.Key == "enum"
-                || property.Key.StartsWith("x-enum", StringComparison.Ordinal)));
     }
 
     [JsonConverter(typeof(UnsupportedWriteConverter))]
