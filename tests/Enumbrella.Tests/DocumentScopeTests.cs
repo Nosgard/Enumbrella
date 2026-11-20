@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.OpenApi;
 
 namespace Enumbrella.Tests;
 
@@ -17,7 +16,7 @@ public class DocumentScopeTests
 
         // Then: v1 lists values and names, and v2 has neither
         TestApi.AssertStatusComponent(registered);
-        Assert.Null(unregistered["components"]!["schemas"]!["OrderStatus"]!["enum"]);
+        Assert.Null(TestApi.Schema(unregistered, "OrderStatus")["enum"]);
         Assert.DoesNotContain("\"x-enum", unregistered.ToJsonString(), StringComparison.Ordinal);
     }
 
@@ -33,8 +32,8 @@ public class DocumentScopeTests
 
         // Then: the response type, which is no enum, matches character for character
         Assert.Equal(
-            unregistered["components"]!["schemas"]!["ScopeResponse"]!.ToJsonString(),
-            registered["components"]!["schemas"]!["ScopeResponse"]!.ToJsonString());
+            TestApi.Schema(unregistered, "ScopeResponse").ToJsonString(),
+            TestApi.Schema(registered, "ScopeResponse").ToJsonString());
     }
 
     [Fact]
@@ -56,12 +55,11 @@ public class DocumentScopeTests
 
     private static Task<WebApplication> StartBothDocuments()
     {
-        Action<OpenApiOptions> withoutRegistration = _ => { };
-
         return TestApi.Start(
             configureJson: null,
             TestApi.MapResponse<ScopeResponse>,
-            ("v1", options => options.AddEnumDescriptions()),
-            ("v2", withoutRegistration));
+            ("v1", TestApi.Register),
+            ("v2", _ => { }
+        ));
     }
 }

@@ -12,15 +12,15 @@ namespace Enumbrella.Tests;
 
 internal static class TestApi
 {
-    // Document, EndpointDocument and InlineEnumDocument serve tests whose starting state is the
-    // finished document, such as the list length test. Other tests start a host and fetch.
-    public static async Task<JsonNode> Document<TResponse>(
-        Action<OpenApiOptions> configure, Action<JsonSerializerOptions>? configureJson = null)
-    {
-        await using var app = await Start<TResponse>(configure, configureJson);
+    // Options
 
-        return await Fetch(app);
-    }
+    public static readonly Action<OpenApiOptions> Register =
+        options => options.AddEnumDescriptions();
+
+    public static readonly Action<OpenApiOptions> RegisterTwice =
+        options => options.AddEnumDescriptions().AddEnumDescriptions();
+
+    // Given
 
     public static Task<WebApplication> Start<TResponse>(
         Action<OpenApiOptions> configure, Action<JsonSerializerOptions>? configureJson = null)
@@ -51,52 +51,6 @@ internal static class TestApi
         return app;
     }
 
-    public static async Task<JsonNode> Fetch(WebApplication app, string document = "v1")
-    {
-        using var client = app.GetTestClient();
-        var json = await client.GetStringAsync($"/openapi/{document}.json");
-
-        return JsonNode.Parse(json)!;
-    }
-
-    public static void MapResponse<TResponse>(WebApplication app)
-    {
-        app.MapGet("/", () => default(TResponse)!);
-    }
-
-    public static async Task<JsonNode> EndpointDocument(params Action<WebApplication>[] endpoints)
-    {
-        await using var app = await StartEndpoints(endpoints);
-
-        return await Fetch(app);
-    }
-
-    public static Task<WebApplication> StartEndpoints(params Action<WebApplication>[] endpoints)
-    {
-        return Start(
-            configureJson: null,
-            host => Array.ForEach(endpoints, map => map(host)),
-            ("v1", options => options.AddEnumDescriptions()));
-    }
-
-    public static void MapNullableStatus(WebApplication app)
-    {
-        app.MapGet("/nullable", () => default(OrderStatus?));
-    }
-
-    public static void MapPlainStatus(WebApplication app)
-    {
-        app.MapGet("/plain", () => default(OrderStatus));
-    }
-
-    public static async Task<JsonNode> InlineEnumDocument<TResponse>(
-        Action<OpenApiOptions> configure, Action<JsonSerializerOptions>? configureJson = null)
-    {
-        await using var app = await StartInlineEnums<TResponse>(configure, configureJson);
-
-        return await Fetch(app);
-    }
-
     public static Task<WebApplication> StartInlineEnums<TResponse>(
         Action<OpenApiOptions> configure, Action<JsonSerializerOptions>? configureJson = null)
     {
@@ -107,6 +61,29 @@ internal static class TestApi
                 configure(options);
             },
             configureJson);
+    }
+
+    public static Task<WebApplication> StartEndpoints(params Action<WebApplication>[] endpoints)
+    {
+        return Start(
+            configureJson: null,
+            host => Array.ForEach(endpoints, map => map(host)),
+            ("v1", Register));
+    }
+
+    public static void MapResponse<TResponse>(WebApplication app)
+    {
+        app.MapGet("/", () => default(TResponse)!);
+    }
+
+    public static void MapNullableStatus(WebApplication app)
+    {
+        app.MapGet("/nullable", () => default(OrderStatus?));
+    }
+
+    public static void MapPlainStatus(WebApplication app)
+    {
+        app.MapGet("/plain", () => default(OrderStatus));
     }
 
     public static Task WriteUnreadableStatusEntry(
@@ -120,20 +97,120 @@ internal static class TestApi
         return Task.CompletedTask;
     }
 
-    public static void AssertStatusComponent(JsonNode document)
-    {
-        var schema = document["components"]!["schemas"]!["OrderStatus"]!;
-        var names = "[\"Pending\",\"Approved\",\"Rejected\"]";
-
-        Assert.Equal("[0,1,2]", schema["enum"]!.ToJsonString());
-        Assert.Equal(names, schema["x-enum-varnames"]!.ToJsonString());
-        Assert.Equal(names, schema["x-enumNames"]!.ToJsonString());
-    }
-
     private static string? InlineEnumReferenceId(JsonTypeInfo typeInfo)
     {
         var type = Nullable.GetUnderlyingType(typeInfo.Type) ?? typeInfo.Type;
 
         return type.IsEnum ? null : OpenApiOptions.CreateDefaultSchemaReferenceId(typeInfo);
+    }
+
+    // When
+
+    public static async Task<JsonNode> Fetch(WebApplication app, string document = "v1")
+    {
+        using var client = app.GetTestClient();
+
+        return await Fetch(client, document);
+    }
+
+    // Every document passes through here, so a list that does not match its enum fails the
+    // fetch of any test, whichever schema it sits on.
+    public static async Task<JsonNode> Fetch(HttpClient client, string document = "v1")
+    {
+        var json = await client.GetStringAsync($"/openapi/{document}.json");
+        var parsed = JsonNode.Parse(json)!;
+
+        foreach (var schema in Objects(parsed).Where(HasEnumList))
+        {
+            AssertListsMatchEnum(schema);
+        }
+
+        return parsed;
+    }
+
+    private static bool HasEnumList(JsonObject schema)
+    {
+        return schema.ContainsKey("x-enum-varnames")
+            || schema.ContainsKey("x-enumNames")
+            || schema.ContainsKey("x-enum-descriptions");
+    }
+
+    private static void AssertListsMatchEnum(JsonObject schema)
+    {
+        var path = schema.GetPath();
+        var count = schema["enum"]?.AsArray().Count;
+        var names = schema["x-enum-varnames"]?.AsArray();
+        var descriptions = schema["x-enum-descriptions"]?.AsArray();
+
+        Assert.True(count is not null, $"{path} has an enum list extension but no enum");
+        Assert.True(names is not null, $"{path} has an enum list extension but no x-enum-varnames");
+        Assert.True(
+            names.Count == count,
+            $"{path}: x-enum-varnames has {names.Count} entries, enum has {count}");
+
+        var varNames = names.ToJsonString();
+        var enumNames = schema["x-enumNames"]?.ToJsonString() ?? "(missing)";
+
+        Assert.True(
+            enumNames == varNames,
+            $"{path}: x-enumNames {enumNames} differs from x-enum-varnames {varNames}");
+        Assert.True(
+            descriptions is null || descriptions.Count == count,
+            $"{path}: x-enum-descriptions has {descriptions?.Count} entries, enum has {count}");
+    }
+
+    // Then
+
+    public static JsonObject Schemas(JsonNode document)
+    {
+        return document["components"]!["schemas"]!.AsObject();
+    }
+
+    public static JsonNode Schema(JsonNode document, string name)
+    {
+        return Schemas(document)[name]!;
+    }
+
+    public static JsonNode Property(JsonNode document, string component, string property)
+    {
+        return Schema(document, component)["properties"]![property]!;
+    }
+
+    public static IEnumerable<JsonObject> Objects(JsonNode? node)
+    {
+        return node switch
+        {
+            JsonObject obj => [obj, .. obj.SelectMany(keyword => Objects(keyword.Value))],
+            JsonArray array => array.SelectMany(Objects),
+            _ => [],
+        };
+    }
+
+    // Checks enum and all three lists of one schema; null descriptions means no description list.
+    public static void AssertEnum(
+        JsonNode schema, string values, string names, string? descriptions)
+    {
+        Assert.Equal(values, schema["enum"]!.ToJsonString());
+        Assert.Equal(names, schema["x-enum-varnames"]!.ToJsonString());
+        Assert.Equal(names, schema["x-enumNames"]!.ToJsonString());
+        Assert.Equal(descriptions, schema["x-enum-descriptions"]?.ToJsonString());
+    }
+
+    public static void AssertStatusComponent(JsonNode document)
+    {
+        AssertEnum(
+            Schema(document, "OrderStatus"),
+            "[0,1,2]",
+            "[\"Pending\",\"Approved\",\"Rejected\"]",
+            "[\"Waiting for approval\",\"Approved\",\"\"]");
+    }
+
+    // Checks that none of the named components carries enum or an x-enum extension.
+    public static void AssertUntouched(JsonNode document, params string[] names)
+    {
+        Assert.All(names, name => Assert.DoesNotContain(
+            Schema(document, name).AsObject(),
+            property => property.Key == "enum"
+                || property.Key.StartsWith("x-enum", StringComparison.Ordinal)));
     }
 }

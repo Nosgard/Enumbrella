@@ -1,68 +1,77 @@
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Enumbrella.Sample;
-using Microsoft.AspNetCore.OpenApi;
 
 namespace Enumbrella.Tests;
 
 public class CustomConverterTests
 {
-    private static readonly Action<OpenApiOptions> Register =
-        options => options.AddEnumDescriptions();
-
     [Fact]
     public async Task AddEnumDescriptions_CustomConvertersOnTypeAndInOptions_KeepSharedSchema()
     {
         // Given: enums with a converter on the type and in the options, the latter also nullable
-        await using var registeredHost = await TestApi.Start<ConvertedResponse>(
-            Register, AddOptionsConverter);
-        await using var unregisteredHost = await TestApi.Start<ConvertedResponse>(
+        CountingConverter<ByType>.Reset();
+        CountingConverter<ByOptions>.Reset();
+
+        await using var registeredHost = await TestApi.Start<TypeAndOptionsResponse>(
+            TestApi.Register, AddOptionsConverter);
+        await using var unregisteredHost = await TestApi.Start<TypeAndOptionsResponse>(
             _ => { }, AddOptionsConverter);
 
         // When: the document is generated with and without the registration
         var registered = await TestApi.Fetch(registeredHost);
         var unregistered = await TestApi.Fetch(unregisteredHost);
 
-        // Then: both schemas match and neither converter ran
-        Assert.Equal(Schema(unregistered, "ByType"), Schema(registered, "ByType"));
-        Assert.Equal(Schema(unregistered, "ByOptions"), Schema(registered, "ByOptions"));
+        // Then: ByType and ByOptions are components, both documents match and neither converter ran
+        var schemas = TestApi.Schemas(registered);
+
+        Assert.Contains("ByType", schemas);
+        Assert.Contains("ByOptions", schemas);
+        Assert.Equal(unregistered.ToJsonString(), registered.ToJsonString());
         Assert.Equal(0, CountingConverter<ByType>.Calls);
         Assert.Equal(0, CountingConverter<ByOptions>.Calls);
     }
 
     [Fact]
-    public async Task AddEnumDescriptions_BuiltInNextToCustomConverters_ListValuesAndBothNameLists()
+    public async Task AddEnumDescriptions_BuiltInNextToCustomConverters_DescribeOnlyDescribedEnums()
     {
         // Given: an integer enum and a string enum next to enums with custom converters
+        CountingConverter<ByType>.Reset();
+        CountingConverter<ByOptions>.Reset();
+
         await using var host = await TestApi.Start<ConvertedResponse>(
-            Register, AddOptionsConverter);
+            TestApi.Register, AddOptionsConverter);
 
         // When: the document is generated
         var document = await TestApi.Fetch(host);
 
-        // Then: both list their values and both name lists
-        var shade = document["components"]!["schemas"]!["Shade"]!;
+        // Then: both list their values and both name lists, Shade has no descriptions, ByType and
+        // ByOptions stay untouched, and neither custom converter ran
         var names = "[\"Light\",\"Dark\"]";
 
         TestApi.AssertStatusComponent(document);
-        Assert.Equal(names, shade["enum"]!.ToJsonString());
-        Assert.Equal(names, shade["x-enum-varnames"]!.ToJsonString());
-        Assert.Equal(names, shade["x-enumNames"]!.ToJsonString());
+        TestApi.AssertEnum(TestApi.Schema(document, "Shade"), names, names, null);
+        TestApi.AssertUntouched(document, "ByType", "ByOptions");
+        Assert.Equal(0, CountingConverter<ByType>.Calls);
+        Assert.Equal(0, CountingConverter<ByOptions>.Calls);
     }
 
     [Fact]
     public async Task AddEnumDescriptions_CustomConvertersOnProperties_KeepSharedSchema()
     {
         // Given: an OrderStatus and an OrderStatus? property, both with a custom converter
-        await using var registeredHost = await TestApi.Start<PropertyConvertedResponse>(Register);
+        CountingConverter<OrderStatus>.Reset();
+
+        await using var registeredHost =
+            await TestApi.Start<PropertyConvertedResponse>(TestApi.Register);
         await using var unregisteredHost = await TestApi.Start<PropertyConvertedResponse>(_ => { });
 
         // When: the document is generated with and without the registration
         var registered = await TestApi.Fetch(registeredHost);
         var unregistered = await TestApi.Fetch(unregisteredHost);
 
-        // Then: both documents match and the converter never ran
+        // Then: OrderStatus is a component, both documents match and the converter never ran
+        Assert.Contains("OrderStatus", TestApi.Schemas(registered));
         Assert.Equal(unregistered.ToJsonString(), registered.ToJsonString());
         Assert.Equal(0, CountingConverter<OrderStatus>.Calls);
     }
@@ -71,8 +80,10 @@ public class CustomConverterTests
     public async Task AddEnumDescriptions_CustomConvertersOnProperties_KeepInlineSchema()
     {
         // Given: the same properties in a host that keeps enums inline
+        CountingConverter<OrderStatus>.Reset();
+
         await using var registeredHost =
-            await TestApi.StartInlineEnums<PropertyConvertedResponse>(Register);
+            await TestApi.StartInlineEnums<PropertyConvertedResponse>(TestApi.Register);
         await using var unregisteredHost =
             await TestApi.StartInlineEnums<PropertyConvertedResponse>(_ => { });
 
@@ -80,7 +91,8 @@ public class CustomConverterTests
         var registered = await TestApi.Fetch(registeredHost);
         var unregistered = await TestApi.Fetch(unregisteredHost);
 
-        // Then: both documents match and the converter never ran
+        // Then: OrderStatus is no component, both documents match and the converter never ran
+        Assert.DoesNotContain("OrderStatus", TestApi.Schemas(registered));
         Assert.Equal(unregistered.ToJsonString(), registered.ToJsonString());
         Assert.Equal(0, CountingConverter<OrderStatus>.Calls);
     }
@@ -89,14 +101,18 @@ public class CustomConverterTests
     public async Task AddEnumDescriptions_NullableEnumWithCustomConverter_KeepsSharedSchema()
     {
         // Given: a nullable enum whose type carries a custom converter
-        await using var registeredHost = await TestApi.Start<NullableConvertedResponse>(Register);
+        CountingConverter<ByType>.Reset();
+
+        await using var registeredHost =
+            await TestApi.Start<NullableConvertedResponse>(TestApi.Register);
         await using var unregisteredHost = await TestApi.Start<NullableConvertedResponse>(_ => { });
 
         // When: the document is generated with and without the registration
         var registered = await TestApi.Fetch(registeredHost);
         var unregistered = await TestApi.Fetch(unregisteredHost);
 
-        // Then: both documents match and the converter never ran
+        // Then: ByType is a component, both documents match and the converter never ran
+        Assert.Contains("ByType", TestApi.Schemas(registered));
         Assert.Equal(unregistered.ToJsonString(), registered.ToJsonString());
         Assert.Equal(0, CountingConverter<ByType>.Calls);
     }
@@ -105,8 +121,10 @@ public class CustomConverterTests
     public async Task AddEnumDescriptions_NullableEnumWithCustomConverter_KeepsInlineSchema()
     {
         // Given: the same nullable enum in a host that keeps enums inline
+        CountingConverter<ByType>.Reset();
+
         await using var registeredHost =
-            await TestApi.StartInlineEnums<NullableConvertedResponse>(Register);
+            await TestApi.StartInlineEnums<NullableConvertedResponse>(TestApi.Register);
         await using var unregisteredHost =
             await TestApi.StartInlineEnums<NullableConvertedResponse>(_ => { });
 
@@ -114,7 +132,8 @@ public class CustomConverterTests
         var registered = await TestApi.Fetch(registeredHost);
         var unregistered = await TestApi.Fetch(unregisteredHost);
 
-        // Then: both documents match and the converter never ran
+        // Then: ByType is no component, both documents match and the converter never ran
+        Assert.DoesNotContain("ByType", TestApi.Schemas(registered));
         Assert.Equal(unregistered.ToJsonString(), registered.ToJsonString());
         Assert.Equal(0, CountingConverter<ByType>.Calls);
     }
@@ -124,8 +143,11 @@ public class CustomConverterTests
     {
         // Given: plain enums with converters on the type and in the options, and a nullable one
         // in a host that keeps enums inline
+        CountingConverter<ByType>.Reset();
+        CountingConverter<ByOptions>.Reset();
+
         await using var registeredHost = await TestApi.StartInlineEnums<TypeAndOptionsResponse>(
-            Register, AddOptionsConverter);
+            TestApi.Register, AddOptionsConverter);
         await using var unregisteredHost = await TestApi.StartInlineEnums<TypeAndOptionsResponse>(
             _ => { }, AddOptionsConverter);
 
@@ -133,7 +155,12 @@ public class CustomConverterTests
         var registered = await TestApi.Fetch(registeredHost);
         var unregistered = await TestApi.Fetch(unregisteredHost);
 
-        // Then: both documents match and neither converter ran
+        // Then: ByType and ByOptions are no components, both documents match and neither
+        // converter ran
+        var schemas = TestApi.Schemas(registered);
+
+        Assert.DoesNotContain("ByType", schemas);
+        Assert.DoesNotContain("ByOptions", schemas);
         Assert.Equal(unregistered.ToJsonString(), registered.ToJsonString());
         Assert.Equal(0, CountingConverter<ByType>.Calls);
         Assert.Equal(0, CountingConverter<ByOptions>.Calls);
@@ -142,11 +169,6 @@ public class CustomConverterTests
     private static void AddOptionsConverter(JsonSerializerOptions options)
     {
         options.Converters.Add(new CountingConverter<ByOptions>());
-    }
-
-    private static string Schema(JsonNode document, string name)
-    {
-        return document["components"]!["schemas"]![name]!.ToJsonString();
     }
 
     [JsonConverter(typeof(CountingConverter<ByType>))]
@@ -158,13 +180,6 @@ public class CustomConverterTests
     internal enum ByOptions
     {
         One = 1,
-    }
-
-    [JsonConverter(typeof(JsonStringEnumConverter))]
-    internal enum Shade
-    {
-        Light = 1,
-        Dark = 2,
     }
 
     internal sealed record ConvertedResponse(
@@ -184,6 +199,11 @@ public class CustomConverterTests
         where TEnum : struct, Enum
     {
         public static int Calls { get; private set; }
+
+        public static void Reset()
+        {
+            Calls = 0;
+        }
 
         public override TEnum Read(
             ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

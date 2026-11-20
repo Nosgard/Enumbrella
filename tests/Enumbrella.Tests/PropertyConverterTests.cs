@@ -1,75 +1,74 @@
 using System.Text.Json.Nodes;
-using Microsoft.AspNetCore.OpenApi;
 
 namespace Enumbrella.Tests;
 
 public class PropertyConverterTests
 {
-    private static readonly Action<OpenApiOptions> Register =
-        options => options.AddEnumDescriptions();
-
     [Fact]
     public async Task AddEnumDescriptions_StringConverterOnProperty_NamesEachStringValue()
     {
         // Given: a JsonStringEnumConverter on an inline OrderStatus property
-        await using var host = await TestApi.StartInlineEnums<StringPropertyResponse>(Register);
+        await using var host =
+            await TestApi.StartInlineEnums<StringPropertyResponse>(TestApi.Register);
 
         // When: the document is generated
         var document = await TestApi.Fetch(host);
 
-        // Then: the strings in enum and both name lists match the member names
-        var schema = Property(document, "plain");
+        // Then: the strings in enum and both name lists match the member names, with descriptions
         var names = "[\"Pending\",\"Approved\",\"Rejected\"]";
 
-        Assert.Equal(names, schema["enum"]!.ToJsonString());
-        Assert.Equal(names, schema["x-enum-varnames"]!.ToJsonString());
-        Assert.Equal(names, schema["x-enumNames"]!.ToJsonString());
+        TestApi.AssertEnum(
+            TestApi.Property(document, "StringPropertyResponse", "plain"),
+            names,
+            names,
+            "[\"Waiting for approval\",\"Approved\",\"\"]");
     }
 
     [Fact]
     public async Task AddEnumDescriptions_StringConverterOnNullableProperty_GivesNullEmptyName()
     {
         // Given: a JsonStringEnumConverter on an inline OrderStatus? property
-        await using var host = await TestApi.StartInlineEnums<StringPropertyResponse>(Register);
+        await using var host =
+            await TestApi.StartInlineEnums<NullableStringPropertyResponse>(TestApi.Register);
 
         // When: the document is generated
         var document = await TestApi.Fetch(host);
 
-        // Then: each string keeps its member name and null gets an empty name
-        var schema = Property(document, "optional");
-        var values = "[\"Pending\",\"Approved\",\"Rejected\",null]";
-        var names = "[\"Pending\",\"Approved\",\"Rejected\",\"\"]";
-
-        Assert.Equal(values, schema["enum"]!.ToJsonString());
-        Assert.Equal(names, schema["x-enum-varnames"]!.ToJsonString());
-        Assert.Equal(names, schema["x-enumNames"]!.ToJsonString());
+        // Then: each string keeps its member name and null gets an empty name and description
+        TestApi.AssertEnum(
+            TestApi.Property(document, "NullableStringPropertyResponse", "optional"),
+            "[\"Pending\",\"Approved\",\"Rejected\",null]",
+            "[\"Pending\",\"Approved\",\"Rejected\",\"\"]",
+            "[\"Waiting for approval\",\"Approved\",\"\",\"\"]");
     }
 
     [Fact]
-    public async Task AddEnumDescriptions_StringPropertyFirst_AddsOnlyNamesToSharedComponent()
+    public async Task AddEnumDescriptions_StringPropertyFirst_AddsOnlyListsToSharedComponent()
     {
         // Given: a property with the string converter declared before a plain one
-        await using var registeredHost = await TestApi.Start<StringFirstResponse>(Register);
+        await using var registeredHost = await TestApi.Start<StringFirstResponse>(TestApi.Register);
         await using var unregisteredHost = await TestApi.Start<StringFirstResponse>(_ => { });
 
         // When: the document is generated with and without the registration
         var registered = await TestApi.Fetch(registeredHost);
         var unregistered = await TestApi.Fetch(unregisteredHost);
 
-        // Then: the names follow the strings, and nothing else differs
-        var status = registered["components"]!["schemas"]!["OrderStatus"]!;
+        // Then: the names and descriptions follow the strings, and nothing else differs
         var names = "[\"Pending\",\"Approved\",\"Rejected\"]";
 
-        Assert.Equal(names, status["x-enum-varnames"]!.ToJsonString());
-        Assert.Equal(names, status["x-enumNames"]!.ToJsonString());
+        TestApi.AssertEnum(
+            TestApi.Schema(registered, "OrderStatus"),
+            names,
+            names,
+            "[\"Waiting for approval\",\"Approved\",\"\"]");
         Assert.Equal(unregistered.ToJsonString(), WithoutAddedKeywords(registered).ToJsonString());
     }
 
     [Fact]
-    public async Task AddEnumDescriptions_PlainPropertyFirst_AddsOnlyEnumAndNamesToSharedComponent()
+    public async Task AddEnumDescriptions_PlainPropertyFirst_AddsOnlyEnumAndListsToSharedComponent()
     {
         // Given: a plain property declared before one with the string converter
-        await using var registeredHost = await TestApi.Start<NumberFirstResponse>(Register);
+        await using var registeredHost = await TestApi.Start<NumberFirstResponse>(TestApi.Register);
         await using var unregisteredHost = await TestApi.Start<NumberFirstResponse>(_ => { });
 
         // When: the document is generated with and without the registration
@@ -85,7 +84,7 @@ public class PropertyConverterTests
     {
         var copy = document.DeepClone();
 
-        foreach (var schema in Objects(copy).ToList())
+        foreach (var schema in TestApi.Objects(copy).ToList())
         {
             var isInteger = schema["type"]?.ToJsonString() == "\"integer\"";
             var added = schema
@@ -98,22 +97,5 @@ public class PropertyConverterTests
         }
 
         return copy;
-    }
-
-    private static IEnumerable<JsonObject> Objects(JsonNode? node)
-    {
-        return node switch
-        {
-            JsonObject obj => [obj, .. obj.SelectMany(keyword => Objects(keyword.Value))],
-            JsonArray array => array.SelectMany(Objects),
-            _ => [],
-        };
-    }
-
-    private static JsonNode Property(JsonNode document, string name)
-    {
-        var response = document["components"]!["schemas"]!["StringPropertyResponse"]!;
-
-        return response["properties"]![name]!;
     }
 }

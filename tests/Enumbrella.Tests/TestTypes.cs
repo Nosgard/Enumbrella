@@ -30,6 +30,13 @@ internal enum Distance : long
     Far = 10_000_000_000,
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
+internal enum Shade
+{
+    Light = 1,
+    Dark = 2,
+}
+
 internal sealed record PriorityResponse(Priority Priority);
 
 internal sealed record TemperatureResponse(Temperature Temperature);
@@ -49,7 +56,9 @@ internal sealed record NullableFirstResponse(OrderStatus? First, OrderStatus Sec
 internal sealed record PlainFirstResponse(OrderStatus First, OrderStatus? Second);
 
 internal sealed record StringPropertyResponse(
-    [property: JsonConverter(typeof(JsonStringEnumConverter))] OrderStatus Plain,
+    [property: JsonConverter(typeof(JsonStringEnumConverter))] OrderStatus Plain);
+
+internal sealed record NullableStringPropertyResponse(
     [property: JsonConverter(typeof(JsonStringEnumConverter))] OrderStatus? Optional);
 
 internal sealed record StringFirstResponse(

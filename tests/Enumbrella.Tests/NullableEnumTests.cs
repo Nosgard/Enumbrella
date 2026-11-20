@@ -1,18 +1,14 @@
 using System.Text.Json.Nodes;
-using Microsoft.AspNetCore.OpenApi;
 
 namespace Enumbrella.Tests;
 
 public class NullableEnumTests
 {
-    private static readonly Action<OpenApiOptions> Register =
-        options => options.AddEnumDescriptions();
-
     [Fact]
     public async Task AddEnumDescriptions_NullablePropertyAlone_ListsValuesOnComponent()
     {
         // Given: a nullable property as the only use of OrderStatus
-        await using var host = await TestApi.Start<NullableStatusResponse>(Register);
+        await using var host = await TestApi.Start<NullableStatusResponse>(TestApi.Register);
 
         // When: the document is generated
         var document = await TestApi.Fetch(host);
@@ -25,7 +21,8 @@ public class NullableEnumTests
     public async Task AddEnumDescriptions_NullablePropertyWithAndWithoutRegistration_KeepsItsOneOf()
     {
         // Given: one host with the registration and one without
-        await using var registeredHost = await TestApi.Start<NullableStatusResponse>(Register);
+        await using var registeredHost =
+            await TestApi.Start<NullableStatusResponse>(TestApi.Register);
         await using var unregisteredHost = await TestApi.Start<NullableStatusResponse>(_ => { });
 
         // When: both documents are generated
@@ -34,39 +31,30 @@ public class NullableEnumTests
 
         // Then: the property keeps its oneOf of null and the reference in both
         var expected = "[{\"type\":\"null\"},{\"$ref\":\"#/components/schemas/OrderStatus\"}]";
+        var unregisteredStatus = TestApi.Property(unregistered, "NullableStatusResponse", "status");
+        var registeredStatus = TestApi.Property(registered, "NullableStatusResponse", "status");
 
-        Assert.Equal(expected, StatusProperty(unregistered)["oneOf"]!.ToJsonString());
-        Assert.Equal(expected, StatusProperty(registered)["oneOf"]!.ToJsonString());
+        Assert.Equal(expected, unregisteredStatus["oneOf"]!.ToJsonString());
+        Assert.Equal(expected, registeredStatus["oneOf"]!.ToJsonString());
     }
 
     [Fact]
-    public async Task AddEnumDescriptions_InlineNullableEnum_EndsItsValuesWithNull()
+    public async Task AddEnumDescriptions_InlineNullableEnum_ListsNullWithEmptyNames()
     {
         // Given: a nullable enum that stays inline
-        await using var host = await TestApi.StartInlineEnums<NullableStatusResponse>(Register);
+        await using var host =
+            await TestApi.StartInlineEnums<NullableStatusResponse>(TestApi.Register);
 
         // When: the document is generated
         var document = await TestApi.Fetch(host);
 
-        // Then: its value list ends with null
-        Assert.Equal("[0,1,2,null]", StatusProperty(document)["enum"]!.ToJsonString());
-    }
-
-    [Fact]
-    public async Task AddEnumDescriptions_InlineNullableEnum_HasEmptyNameForNull()
-    {
-        // Given: a nullable enum that stays inline
-        await using var host = await TestApi.StartInlineEnums<NullableStatusResponse>(Register);
-
-        // When: the document is generated
-        var document = await TestApi.Fetch(host);
-
-        // Then: the null entry has an empty name in both name lists
-        var schema = StatusProperty(document);
-        var names = "[\"Pending\",\"Approved\",\"Rejected\",\"\"]";
-
-        Assert.Equal(names, schema["x-enum-varnames"]!.ToJsonString());
-        Assert.Equal(names, schema["x-enumNames"]!.ToJsonString());
+        // Then: the values end with null, which gets an empty name in both lists and an empty
+        // description
+        TestApi.AssertEnum(
+            TestApi.Property(document, "NullableStatusResponse", "status"),
+            "[0,1,2,null]",
+            "[\"Pending\",\"Approved\",\"Rejected\",\"\"]",
+            "[\"Waiting for approval\",\"Approved\",\"\",\"\"]");
     }
 
     [Fact]
@@ -74,7 +62,7 @@ public class NullableEnumTests
     {
         // Given: inline enums in one host with the registration and one without
         await using var registeredHost =
-            await TestApi.StartInlineEnums<NullableStatusResponse>(Register);
+            await TestApi.StartInlineEnums<NullableStatusResponse>(TestApi.Register);
         await using var unregisteredHost =
             await TestApi.StartInlineEnums<NullableStatusResponse>(_ => { });
 
@@ -84,25 +72,32 @@ public class NullableEnumTests
 
         // Then: both keep the type list the host wrote
         var expected = "[\"null\",\"integer\"]";
+        var unregisteredStatus = TestApi.Property(unregistered, "NullableStatusResponse", "status");
+        var registeredStatus = TestApi.Property(registered, "NullableStatusResponse", "status");
 
-        Assert.Equal(expected, StatusProperty(unregistered)["type"]!.ToJsonString());
-        Assert.Equal(expected, StatusProperty(registered)["type"]!.ToJsonString());
+        Assert.Equal(expected, unregisteredStatus["type"]!.ToJsonString());
+        Assert.Equal(expected, registeredStatus["type"]!.ToJsonString());
     }
 
     [Fact]
     public async Task AddEnumDescriptions_InlineNullableEnumRegisteredTwice_KeepsOneNull()
     {
         // Given: inline enums in one host registering once and one twice
-        await using var onceHost = await TestApi.StartInlineEnums<NullableStatusResponse>(Register);
-        await using var twiceHost = await TestApi.StartInlineEnums<NullableStatusResponse>(
-            options => options.AddEnumDescriptions().AddEnumDescriptions());
+        await using var onceHost =
+            await TestApi.StartInlineEnums<NullableStatusResponse>(TestApi.Register);
+        await using var twiceHost =
+            await TestApi.StartInlineEnums<NullableStatusResponse>(TestApi.RegisterTwice);
 
         // When: both documents are generated
         var once = await TestApi.Fetch(onceHost);
         var twice = await TestApi.Fetch(twiceHost);
 
-        // Then: the value list holds one null and the documents match
-        Assert.Equal("[0,1,2,null]", StatusProperty(twice)["enum"]!.ToJsonString());
+        // Then: the value list holds one null, each list one entry for it, and the documents match
+        TestApi.AssertEnum(
+            TestApi.Property(twice, "NullableStatusResponse", "status"),
+            "[0,1,2,null]",
+            "[\"Pending\",\"Approved\",\"Rejected\",\"\"]",
+            "[\"Waiting for approval\",\"Approved\",\"\",\"\"]");
         Assert.Equal(once.ToJsonString(), twice.ToJsonString());
     }
 
@@ -110,7 +105,7 @@ public class NullableEnumTests
     public async Task AddEnumDescriptions_NullablePropertyComesFirst_YieldsOneComponent()
     {
         // Given: a nullable property declared before a plain one of the same enum
-        await using var host = await TestApi.Start<NullableFirstResponse>(Register);
+        await using var host = await TestApi.Start<NullableFirstResponse>(TestApi.Register);
 
         // When: the document is generated
         var document = await TestApi.Fetch(host);
@@ -123,7 +118,7 @@ public class NullableEnumTests
     public async Task AddEnumDescriptions_NullablePropertyComesLast_YieldsOneComponent()
     {
         // Given: a plain property declared before a nullable one of the same enum
-        await using var host = await TestApi.Start<PlainFirstResponse>(Register);
+        await using var host = await TestApi.Start<PlainFirstResponse>(TestApi.Register);
 
         // When: the document is generated
         var document = await TestApi.Fetch(host);
@@ -160,16 +155,9 @@ public class NullableEnumTests
         AssertOneStatusComponent(document);
     }
 
-    private static JsonNode StatusProperty(JsonNode document)
-    {
-        var response = document["components"]!["schemas"]!["NullableStatusResponse"]!;
-
-        return response["properties"]!["status"]!;
-    }
-
     private static void AssertOneStatusComponent(JsonNode document)
     {
-        var schemas = document["components"]!["schemas"]!.AsObject();
+        var schemas = TestApi.Schemas(document);
 
         Assert.Single(
             schemas, entry => entry.Key.StartsWith("OrderStatus", StringComparison.Ordinal));
