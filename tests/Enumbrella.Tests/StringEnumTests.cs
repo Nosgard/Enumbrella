@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
@@ -208,6 +209,86 @@ public class StringEnumTests
             "[\"Paid by card\",\"Paid on invoice\",\"Paid by bank transfer\"]");
     }
 
+    [Fact]
+    public async Task AddEnumDescriptions_ForeignStringOrder_DescriptionsFollowEachString()
+    {
+        // Given: a schema transformer that writes Shipping as pickup, express, standard before
+        // the registration, which is neither the declaration nor the value order
+        await using var host = await TestApi.Start<ShippingResponse>(
+            TestApi.RegisterAfterEntries<Shipping>("[\"pickup\",\"express\",\"standard\"]"),
+            CamelCaseStrings);
+
+        // When: the document is generated
+        var document = await TestApi.Fetch(host);
+
+        // Then: each string gets its C# name and its description at its own position
+        TestApi.AssertEnum(
+            TestApi.Schema(document, "Shipping"),
+            "[\"pickup\",\"express\",\"standard\"]",
+            "[\"Pickup\",\"Express\",\"Standard\"]",
+            "[\"Pickup\",\"Express delivery\",\"Standard delivery\"]");
+    }
+
+    [Fact]
+    public async Task AddEnumDescriptions_StringsSharingAValue_UseFirstDeclaredMember()
+    {
+        // Given: Callsign as camelCase strings, where Zulu and the later Alpha share the value 1
+        await using var host =
+            await TestApi.Start<CallsignResponse>(TestApi.Register, CamelCaseStrings);
+
+        // When: the document is generated
+        var document = await TestApi.Fetch(host);
+
+        // Then: both strings of the value 1 get the name and the description of Zulu
+        TestApi.AssertEnum(
+            TestApi.Schema(document, "Callsign"),
+            "[\"zulu\",\"alpha\",\"bravo\"]",
+            "[\"Zulu\",\"Zulu\",\"Bravo\"]",
+            "[\"Zulu text\",\"Zulu text\",\"\"]");
+    }
+
+    [Fact]
+    public async Task AddEnumDescriptions_ConverterOnTypeWithNamingPolicy_ListsCSharpNames()
+    {
+        // Given: Window with a kebab-case string converter on the type and none in the options
+        await using var host = await TestApi.Start<WindowResponse>(TestApi.Register);
+
+        // When: the document is generated
+        var document = await TestApi.Fetch(host);
+
+        // Then: each kebab-case string gets its C# name and its description at the same position
+        TestApi.AssertEnum(
+            TestApi.Schema(document, "Window"),
+            "[\"early-morning\",\"late-evening\"]",
+            "[\"EarlyMorning\",\"LateEvening\"]",
+            "[\"Morning slot\",\"\"]");
+    }
+
+    [Fact]
+    public async Task AddEnumDescriptions_ConverterOnOneProperty_OnlyItListsStrings()
+    {
+        // Given: ReviewStatus inline, once with a string converter on the property and once without
+        await using var host =
+            await TestApi.StartInlineEnums<ReviewConvertedResponse>(TestApi.Register);
+
+        // When: the document is generated
+        var document = await TestApi.Fetch(host);
+
+        // Then: "declined" gets the name and description of Rejected; plain keeps integer values
+        var names = "[\"Pending\",\"Approved\",\"Rejected\"]";
+
+        TestApi.AssertEnum(
+            TestApi.Property(document, "ReviewConvertedResponse", "converted"),
+            "[\"Pending\",\"Approved\",\"declined\"]",
+            names,
+            "[\"\",\"\",\"Declined by review\"]");
+        TestApi.AssertEnum(
+            TestApi.Property(document, "ReviewConvertedResponse", "plain"),
+            "[0,1,2]",
+            names,
+            "[\"\",\"\",\"Declined by review\"]");
+    }
+
     private static void CamelCaseStrings(JsonSerializerOptions options)
     {
         options.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
@@ -228,4 +309,19 @@ public class StringEnumTests
             TestApi.Schema(unregistered, response).ToJsonString(),
             TestApi.Schema(registered, response).ToJsonString());
     }
+
+    [JsonConverter(typeof(KebabCaseStrings))]
+    internal enum Window
+    {
+        [Description("Morning slot")]
+        EarlyMorning = 1,
+
+        LateEvening = 2,
+    }
+
+    internal sealed record WindowResponse(Window Window);
+
+    // An attribute cannot pass a naming policy, so the policy goes into a subclass.
+    private sealed class KebabCaseStrings()
+        : JsonStringEnumConverter(JsonNamingPolicy.KebabCaseLower);
 }
