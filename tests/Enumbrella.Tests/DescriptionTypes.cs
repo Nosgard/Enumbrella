@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Text.Json.Serialization;
 
 namespace Enumbrella.Tests;
 
@@ -72,6 +73,17 @@ internal enum Localized
     Cash = 2,
 }
 
+internal enum ReviewStatus
+{
+    Pending = 0,
+
+    Approved = 1,
+
+    [JsonStringEnumMemberName("declined")]
+    [Description("Declined by review")]
+    Rejected = 2,
+}
+
 internal sealed class LabelAttribute(string text) : DescriptionAttribute(text);
 
 // Overrides Description the way attributes for translated texts do.
@@ -96,3 +108,5 @@ internal sealed record ChannelResponse(Channel Channel);
 internal sealed record LabelledResponse(Labelled Labelled);
 
 internal sealed record LocalizedResponse(Localized Localized);
+
+internal sealed record ReviewStatusResponse(ReviewStatus Status);
