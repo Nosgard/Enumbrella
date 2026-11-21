@@ -64,6 +64,24 @@ public class ConverterFailureTests
             "[\"\",\"Waiting for approval\"]");
     }
 
+    [Fact]
+    public async Task AddEnumDescriptions_ForeignUndeclaredValue_GetsEmptyNameAndDescription()
+    {
+        // Given: a schema transformer that writes 0, the undeclared 7 and 1 before the registration
+        await using var host =
+            await TestApi.Start<Order>(TestApi.RegisterAfterEntries<OrderStatus>("[0,7,1]"));
+
+        // When: the document is generated
+        var document = await TestApi.Fetch(host);
+
+        // Then: 7 gets an empty name and description, and 0 and 1 keep their own at their position
+        TestApi.AssertEnum(
+            TestApi.Schema(document, "OrderStatus"),
+            "[0,7,1]",
+            "[\"Pending\",\"\",\"Approved\"]",
+            "[\"Waiting for approval\",\"\",\"Approved\"]");
+    }
+
     [JsonConverter(typeof(UnsupportedWriteConverter))]
     internal enum UnsupportedOnWrite
     {
