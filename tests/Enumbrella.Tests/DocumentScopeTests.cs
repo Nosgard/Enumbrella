@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Builder;
-
 namespace Enumbrella.Tests;
 
 public class DocumentScopeTests
@@ -8,7 +6,7 @@ public class DocumentScopeTests
     public async Task AddEnumDescriptions_OneOfTwoDocumentsRegistered_OnlyItCarriesEnumExtensions()
     {
         // Given: a host where v1 has the registration and v2 does not
-        await using var app = await StartBothDocuments();
+        await using var app = await TestApi.StartBothDocuments<ScopeResponse>();
 
         // When: both documents are fetched
         var registered = await TestApi.Fetch(app, "v1");
@@ -24,7 +22,7 @@ public class DocumentScopeTests
     public async Task AddEnumDescriptions_NonEnumSchema_IsIdenticalInBothDocuments()
     {
         // Given: a host where v1 has the registration and v2 does not
-        await using var app = await StartBothDocuments();
+        await using var app = await TestApi.StartBothDocuments<ScopeResponse>();
 
         // When: both documents are fetched
         var registered = await TestApi.Fetch(app, "v1");
@@ -40,7 +38,7 @@ public class DocumentScopeTests
     public async Task AddEnumDescriptions_ParallelFetches_KeepDocumentsApart()
     {
         // Given: a host where v1 has the registration and v2 does not
-        await using var app = await StartBothDocuments();
+        await using var app = await TestApi.StartBothDocuments<ScopeResponse>();
 
         // When: 20 parallel fetches alternate between v1 and v2
         var fetches = Enumerable.Range(0, 20)
@@ -51,15 +49,5 @@ public class DocumentScopeTests
         Assert.All(documents.Where((_, index) => index % 2 == 0), TestApi.AssertStatusComponent);
         Assert.All(documents.Where((_, index) => index % 2 == 1), document =>
             Assert.DoesNotContain("\"x-enum", document.ToJsonString(), StringComparison.Ordinal));
-    }
-
-    private static Task<WebApplication> StartBothDocuments()
-    {
-        return TestApi.Start(
-            configureJson: null,
-            TestApi.MapResponse<ScopeResponse>,
-            ("v1", TestApi.Register),
-            ("v2", _ => { }
-        ));
     }
 }

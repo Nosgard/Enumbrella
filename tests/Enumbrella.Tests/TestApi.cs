@@ -20,6 +20,13 @@ internal static class TestApi
     public static readonly Action<OpenApiOptions> RegisterTwice =
         options => options.AddEnumDescriptions().AddEnumDescriptions();
 
+    public static Action<OpenApiOptions> RegisterAfterEntries<TEnum>(string entries)
+    {
+        return options => options
+            .AddSchemaTransformer(WriteEntries<TEnum>(entries))
+            .AddEnumDescriptions();
+    }
+
     // Given
 
     public static Task<WebApplication> Start<TResponse>(
@@ -71,6 +78,12 @@ internal static class TestApi
             ("v1", Register));
     }
 
+    public static Task<WebApplication> StartBothDocuments<TResponse>(
+        Action<JsonSerializerOptions>? configureJson = null)
+    {
+        return Start(configureJson, MapResponse<TResponse>, ("v1", Register), ("v2", _ => { }));
+    }
+
     public static void MapResponse<TResponse>(WebApplication app)
     {
         app.MapGet("/", () => default(TResponse)!);
@@ -86,15 +99,18 @@ internal static class TestApi
         app.MapGet("/plain", () => default(OrderStatus));
     }
 
-    public static Task WriteUnreadableStatusEntry(
-        OpenApiSchema schema, OpenApiSchemaTransformerContext context, CancellationToken token)
+    private static Func<OpenApiSchema, OpenApiSchemaTransformerContext, CancellationToken, Task>
+        WriteEntries<TEnum>(string entries)
     {
-        if (context.JsonTypeInfo.Type == typeof(OrderStatus))
+        return (schema, context, _) =>
         {
-            schema.Enum = [JsonValue.Create("unknown"), JsonValue.Create(0)];
-        }
+            if (context.JsonTypeInfo.Type == typeof(TEnum))
+            {
+                schema.Enum = JsonSerializer.Deserialize<List<JsonNode>>(entries)!;
+            }
 
-        return Task.CompletedTask;
+            return Task.CompletedTask;
+        };
     }
 
     private static string? InlineEnumReferenceId(JsonTypeInfo typeInfo)
@@ -203,6 +219,13 @@ internal static class TestApi
             "[0,1,2]",
             "[\"Pending\",\"Approved\",\"Rejected\"]",
             "[\"Waiting for approval\",\"Approved\",\"\"]");
+    }
+
+    // Checks that one component name starts with name; a copy such as OrderStatus2 fails it.
+    public static void AssertSingleComponent(JsonNode document, string name)
+    {
+        Assert.Single(
+            Schemas(document), entry => entry.Key.StartsWith(name, StringComparison.Ordinal));
     }
 
     // Checks that none of the named components carries enum or an x-enum extension.

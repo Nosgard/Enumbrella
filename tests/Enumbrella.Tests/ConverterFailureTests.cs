@@ -48,10 +48,10 @@ public class ConverterFailureTests
     [Fact]
     public async Task AddEnumDescriptions_ForeignUnreadableEntry_GetsEmptyNameAndDescription()
     {
-        // Given: a schema transformer that writes an unreadable entry before the registration
-        await using var host = await TestApi.Start<Order>(options => options
-            .AddSchemaTransformer(TestApi.WriteUnreadableStatusEntry)
-            .AddEnumDescriptions());
+        // Given: a schema transformer that writes the unreadable "unknown" and the readable 0
+        // before the registration
+        await using var host = await TestApi.Start<Order>(
+            TestApi.RegisterAfterEntries<OrderStatus>("[\"unknown\",0]"));
 
         // When: the document is generated
         var document = await TestApi.Fetch(host);
