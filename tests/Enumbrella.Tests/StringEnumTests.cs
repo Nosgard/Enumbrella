@@ -289,6 +289,29 @@ public class StringEnumTests
             "[\"\",\"\",\"Declined by review\"]");
     }
 
+    [Fact]
+    public async Task AddEnumDescriptions_StringsInOneOfTwoDocuments_OnlyItCarriesLists()
+    {
+        // Given: camelCase strings in a host where v1 has the registration and v2 does not
+        await using var host = await TestApi.StartBothDocuments<Order>(CamelCaseStrings);
+
+        // When: both documents are fetched
+        var registered = await TestApi.Fetch(host, "v1");
+        var unregistered = await TestApi.Fetch(host, "v2");
+
+        // Then: v1 lists names and descriptions per string, and v2 has the same strings without an
+        // x-enum extension
+        var values = "[\"pending\",\"approved\",\"rejected\"]";
+
+        TestApi.AssertEnum(
+            TestApi.Schema(registered, "OrderStatus"),
+            values,
+            "[\"Pending\",\"Approved\",\"Rejected\"]",
+            "[\"Waiting for approval\",\"Approved\",\"\"]");
+        Assert.Equal(values, TestApi.Schema(unregistered, "OrderStatus")["enum"]!.ToJsonString());
+        Assert.DoesNotContain("\"x-enum", unregistered.ToJsonString(), StringComparison.Ordinal);
+    }
+
     private static void CamelCaseStrings(JsonSerializerOptions options)
     {
         options.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
