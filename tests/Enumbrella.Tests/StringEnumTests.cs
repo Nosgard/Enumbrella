@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Enumbrella.Sample;
 
@@ -80,6 +81,78 @@ public class StringEnumTests
     }
 
     [Fact]
+    public async Task AddEnumDescriptions_StringsPlainFirst_ListsWithoutNullLikeHost()
+    {
+        // Given: camelCase strings with OrderStatus before OrderStatus?, with and without the
+        // registration
+        await using var registeredHost =
+            await TestApi.Start<PlainFirstResponse>(TestApi.Register, CamelCaseStrings);
+        await using var unregisteredHost =
+            await TestApi.Start<PlainFirstResponse>(_ => { }, CamelCaseStrings);
+
+        // When: the document is generated with and without the registration
+        var registered = await TestApi.Fetch(registeredHost);
+        var unregistered = await TestApi.Fetch(unregisteredHost);
+
+        // Then: one OrderStatus component matches the host without the registration, and it lists
+        // names and descriptions without null
+        AssertStatusLikeUnregistered(registered, unregistered, "PlainFirstResponse");
+        TestApi.AssertEnum(
+            TestApi.Schema(registered, "OrderStatus"),
+            "[\"pending\",\"approved\",\"rejected\"]",
+            "[\"Pending\",\"Approved\",\"Rejected\"]",
+            "[\"Waiting for approval\",\"Approved\",\"\"]");
+    }
+
+    [Fact]
+    public async Task AddEnumDescriptions_StringsNullableFirst_ListsEmptyEntriesAtNullLikeHost()
+    {
+        // Given: camelCase strings with OrderStatus? before OrderStatus, with and without the
+        // registration
+        await using var registeredHost =
+            await TestApi.Start<NullableFirstResponse>(TestApi.Register, CamelCaseStrings);
+        await using var unregisteredHost =
+            await TestApi.Start<NullableFirstResponse>(_ => { }, CamelCaseStrings);
+
+        // When: the document is generated with and without the registration
+        var registered = await TestApi.Fetch(registeredHost);
+        var unregistered = await TestApi.Fetch(unregisteredHost);
+
+        // Then: one OrderStatus component matches the host without the registration, and it lists
+        // empty entries at null
+        AssertStatusLikeUnregistered(registered, unregistered, "NullableFirstResponse");
+        TestApi.AssertEnum(
+            TestApi.Schema(registered, "OrderStatus"),
+            "[\"pending\",\"approved\",\"rejected\",null]",
+            "[\"Pending\",\"Approved\",\"Rejected\",\"\"]",
+            "[\"Waiting for approval\",\"Approved\",\"\",\"\"]");
+    }
+
+    [Fact]
+    public async Task AddEnumDescriptions_InlineCamelCaseStrings_ListLikeComponent()
+    {
+        // Given: camelCase strings that stay inline, as OrderStatus and as OrderStatus?
+        await using var host =
+            await TestApi.StartInlineEnums<PlainFirstResponse>(TestApi.Register, CamelCaseStrings);
+
+        // When: the document is generated
+        var document = await TestApi.Fetch(host);
+
+        // Then: both properties carry the names and descriptions of the component, the nullable
+        // one with empty entries at null
+        TestApi.AssertEnum(
+            TestApi.Property(document, "PlainFirstResponse", "first"),
+            "[\"pending\",\"approved\",\"rejected\"]",
+            "[\"Pending\",\"Approved\",\"Rejected\"]",
+            "[\"Waiting for approval\",\"Approved\",\"\"]");
+        TestApi.AssertEnum(
+            TestApi.Property(document, "PlainFirstResponse", "second"),
+            "[\"pending\",\"approved\",\"rejected\",null]",
+            "[\"Pending\",\"Approved\",\"Rejected\",\"\"]",
+            "[\"Waiting for approval\",\"Approved\",\"\",\"\"]");
+    }
+
+    [Fact]
     public async Task AddEnumDescriptions_StringsWithoutNamingPolicy_NamesMatchStrings()
     {
         // Given: OrderStatus as strings without a naming policy
@@ -138,5 +211,21 @@ public class StringEnumTests
     private static void CamelCaseStrings(JsonSerializerOptions options)
     {
         options.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+    }
+
+    private static void AssertStatusLikeUnregistered(
+        JsonNode registered, JsonNode unregistered, string response)
+    {
+        var registeredStatus = TestApi.Schema(registered, "OrderStatus");
+        var unregisteredStatus = TestApi.Schema(unregistered, "OrderStatus");
+
+        TestApi.AssertSingleComponent(registered, "OrderStatus");
+        Assert.Equal(
+            unregisteredStatus["type"]?.ToJsonString(), registeredStatus["type"]?.ToJsonString());
+        Assert.Equal(
+            unregisteredStatus["enum"]!.ToJsonString(), registeredStatus["enum"]!.ToJsonString());
+        Assert.Equal(
+            TestApi.Schema(unregistered, response).ToJsonString(),
+            TestApi.Schema(registered, response).ToJsonString());
     }
 }
