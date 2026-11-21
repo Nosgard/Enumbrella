@@ -23,10 +23,8 @@ public class CustomConverterTests
         var unregistered = await TestApi.Fetch(unregisteredHost);
 
         // Then: ByType and ByOptions are components, both documents match and neither converter ran
-        var schemas = TestApi.Schemas(registered);
-
-        Assert.Contains("ByType", schemas);
-        Assert.Contains("ByOptions", schemas);
+        Assert.Contains("ByType", TestApi.Schemas(registered));
+        Assert.Contains("ByOptions", TestApi.Schemas(registered));
         Assert.Equal(unregistered.ToJsonString(), registered.ToJsonString());
         Assert.Equal(0, CountingConverter<ByType>.Calls);
         Assert.Equal(0, CountingConverter<ByOptions>.Calls);
@@ -141,8 +139,7 @@ public class CustomConverterTests
     [Fact]
     public async Task AddEnumDescriptions_CustomConvertersOnTypeAndInOptions_KeepInlineSchema()
     {
-        // Given: plain enums with converters on the type and in the options, and a nullable one
-        // in a host that keeps enums inline
+        // Given: inline enums with converters on the type and in the options, one also nullable
         CountingConverter<ByType>.Reset();
         CountingConverter<ByOptions>.Reset();
 
@@ -155,12 +152,9 @@ public class CustomConverterTests
         var registered = await TestApi.Fetch(registeredHost);
         var unregistered = await TestApi.Fetch(unregisteredHost);
 
-        // Then: ByType and ByOptions are no components, both documents match and neither
-        // converter ran
-        var schemas = TestApi.Schemas(registered);
-
-        Assert.DoesNotContain("ByType", schemas);
-        Assert.DoesNotContain("ByOptions", schemas);
+        // Then: ByType and ByOptions are no components, both documents match and no converter ran
+        Assert.DoesNotContain("ByType", TestApi.Schemas(registered));
+        Assert.DoesNotContain("ByOptions", TestApi.Schemas(registered));
         Assert.Equal(unregistered.ToJsonString(), registered.ToJsonString());
         Assert.Equal(0, CountingConverter<ByType>.Calls);
         Assert.Equal(0, CountingConverter<ByOptions>.Calls);
