@@ -157,10 +157,7 @@ public class NullableEnumTests
 
     private static void AssertOneStatusComponent(JsonNode document)
     {
-        var schemas = TestApi.Schemas(document);
-
-        Assert.Single(
-            schemas, entry => entry.Key.StartsWith("OrderStatus", StringComparison.Ordinal));
+        TestApi.AssertSingleComponent(document, "OrderStatus");
         TestApi.AssertStatusComponent(document);
     }
 }
