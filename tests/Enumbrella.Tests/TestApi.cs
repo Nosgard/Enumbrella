@@ -242,6 +242,12 @@ internal static class TestApi
             "[\"Waiting for approval\",\"Approved\",\"\"]");
     }
 
+    public static void AssertOneStatusComponent(JsonNode document)
+    {
+        AssertSingleComponent(document, "OrderStatus");
+        AssertStatusComponent(document);
+    }
+
     // Checks that one component name starts with name; a copy such as OrderStatus2 fails it.
     public static void AssertSingleComponent(JsonNode document, string name)
     {

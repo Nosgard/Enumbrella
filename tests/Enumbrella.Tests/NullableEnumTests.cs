@@ -1,5 +1,3 @@
-using System.Text.Json.Nodes;
-
 namespace Enumbrella.Tests;
 
 public class NullableEnumTests
@@ -14,7 +12,7 @@ public class NullableEnumTests
         var document = await TestApi.Fetch(host);
 
         // Then: the component lists the values and both name lists
-        AssertOneStatusComponent(document);
+        TestApi.AssertOneStatusComponent(document);
     }
 
     [Fact]
@@ -111,7 +109,7 @@ public class NullableEnumTests
         var document = await TestApi.Fetch(host);
 
         // Then: both share one component whose values hold no null
-        AssertOneStatusComponent(document);
+        TestApi.AssertOneStatusComponent(document);
     }
 
     [Fact]
@@ -124,7 +122,7 @@ public class NullableEnumTests
         var document = await TestApi.Fetch(host);
 
         // Then: both share one component whose values hold no null
-        AssertOneStatusComponent(document);
+        TestApi.AssertOneStatusComponent(document);
     }
 
     [Fact]
@@ -138,7 +136,7 @@ public class NullableEnumTests
         var document = await TestApi.Fetch(host);
 
         // Then: both share one component whose values hold no null
-        AssertOneStatusComponent(document);
+        TestApi.AssertOneStatusComponent(document);
     }
 
     [Fact]
@@ -152,12 +150,6 @@ public class NullableEnumTests
         var document = await TestApi.Fetch(host);
 
         // Then: both share one component whose values hold no null
-        AssertOneStatusComponent(document);
-    }
-
-    private static void AssertOneStatusComponent(JsonNode document)
-    {
-        TestApi.AssertSingleComponent(document, "OrderStatus");
-        TestApi.AssertStatusComponent(document);
+        TestApi.AssertOneStatusComponent(document);
     }
 }
