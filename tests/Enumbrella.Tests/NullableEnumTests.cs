@@ -16,7 +16,7 @@ public class NullableEnumTests
     }
 
     [Fact]
-    public async Task AddEnumDescriptions_NullablePropertyWithAndWithoutRegistration_KeepsItsOneOf()
+    public async Task AddEnumDescriptions_NullableProperty_KeepsNullabilityOfHost()
     {
         // Given: one host with the registration and one without
         await using var registeredHost =
@@ -27,13 +27,17 @@ public class NullableEnumTests
         var registered = await TestApi.Fetch(registeredHost);
         var unregistered = await TestApi.Fetch(unregisteredHost);
 
-        // Then: the property keeps its oneOf of null and the reference in both
+        // Then: the property keeps its oneOf of null and the reference in both, and the component
+        // matches the one without the registration apart from the added keywords
         var expected = "[{\"type\":\"null\"},{\"$ref\":\"#/components/schemas/OrderStatus\"}]";
         var unregisteredStatus = TestApi.Property(unregistered, "NullableStatusResponse", "status");
         var registeredStatus = TestApi.Property(registered, "NullableStatusResponse", "status");
 
         Assert.Equal(expected, unregisteredStatus["oneOf"]!.ToJsonString());
         Assert.Equal(expected, registeredStatus["oneOf"]!.ToJsonString());
+        Assert.Equal(
+            TestApi.Schema(unregistered, "OrderStatus").ToJsonString(),
+            TestApi.WithoutAddedKeywords(TestApi.Schema(registered, "OrderStatus")).ToJsonString());
     }
 
     [Fact]
