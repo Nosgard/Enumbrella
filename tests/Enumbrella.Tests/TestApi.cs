@@ -61,13 +61,7 @@ internal static class TestApi
     public static Task<WebApplication> StartInlineEnums<TResponse>(
         Action<OpenApiOptions> configure, Action<JsonSerializerOptions>? configureJson = null)
     {
-        return Start<TResponse>(
-            options =>
-            {
-                options.CreateSchemaReferenceId = InlineEnumReferenceId;
-                configure(options);
-            },
-            configureJson);
+        return Start<TResponse>(WithInlineEnums(configure), configureJson);
     }
 
     public static Task<WebApplication> StartEndpoints(params Action<WebApplication>[] endpoints)
@@ -110,6 +104,15 @@ internal static class TestApi
             }
 
             return Task.CompletedTask;
+        };
+    }
+
+    private static Action<OpenApiOptions> WithInlineEnums(Action<OpenApiOptions> configure)
+    {
+        return options =>
+        {
+            options.CreateSchemaReferenceId = InlineEnumReferenceId;
+            configure(options);
         };
     }
 
