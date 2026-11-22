@@ -14,8 +14,12 @@ namespace Enumbrella;
 // A missing value list is filled in ascending numeric order, and a value declared twice keeps
 // its first member's name and description. The list filled in here ends with null when the
 // schema type allows null, with an empty name and description.
-// The host writes neither values nor a type for an enum with a custom converter. The transformer
-// leaves such a schema untouched and never calls that converter. Holds no state between calls.
+// The host writes neither values nor a type for an enum with a custom converter; the transformer
+// leaves such a schema untouched. After another transformer adds a type or values, the
+// transformer calls that converter. If writing throws JsonException or NotSupportedException, it
+// keeps the schema as it is. If reading an entry throws one of them, the entry gets an empty name
+// and, where a description list exists, an empty description. It leaves the schema of a [Flags]
+// enum unchanged, since a combination of flags has no member name. Holds no state between calls.
 internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
 {
     private const string VarNamesExtension = "x-enum-varnames";
@@ -30,7 +34,9 @@ internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
         var type = context.JsonTypeInfo.Type;
         var enumType = Nullable.GetUnderlyingType(type) ?? type;
 
-        if (!enumType.IsEnum || schema is { Enum: null, Type: null })
+        if (!enumType.IsEnum
+            || enumType.IsDefined(typeof(FlagsAttribute), false)
+            || schema is { Enum: null, Type: null })
         {
             return Task.CompletedTask;
         }

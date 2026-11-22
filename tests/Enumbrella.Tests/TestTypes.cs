@@ -37,6 +37,13 @@ internal enum Shade
     Dark = 2,
 }
 
+[Flags]
+internal enum Permissions
+{
+    Read = 1,
+    Write = 2,
+}
+
 internal sealed record PriorityResponse(Priority Priority);
 
 internal sealed record TemperatureResponse(Temperature Temperature);
@@ -44,6 +51,8 @@ internal sealed record TemperatureResponse(Temperature Temperature);
 internal sealed record LevelResponse(Level Level);
 
 internal sealed record DistanceResponse(Distance Distance);
+
+internal sealed record PermissionsResponse(Permissions Value, Permissions? Optional);
 
 internal sealed record ScopeResponse(OrderStatus Status, OrderStatus? Optional, int? Count);
 
