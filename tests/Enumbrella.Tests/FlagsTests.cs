@@ -92,4 +92,23 @@ public class FlagsTests
         // Then: both documents match character for character
         Assert.Equal(unregistered.ToJsonString(), registered.ToJsonString());
     }
+
+    [Fact]
+    public async Task AddEnumDescriptions_FlagsWithForeignValues_MatchesUnregisteredDocument()
+    {
+        // Given: a schema transformer that writes [1,2] into the enum of [Flags] Permissions, in
+        // one host with the registration after it and one without
+        await using var registeredHost = await TestApi.Start<PermissionsResponse>(
+            TestApi.WithEntries<Permissions>("[1,2]", TestApi.Register));
+        await using var unregisteredHost = await TestApi.Start<PermissionsResponse>(
+            TestApi.WithEntries<Permissions>("[1,2]", _ => { }));
+
+        // When: both documents are generated
+        var registered = await TestApi.Fetch(registeredHost);
+        var unregistered = await TestApi.Fetch(unregisteredHost);
+
+        // Then: the enum keeps the foreign [1,2], and both documents match character for character
+        Assert.Equal("[1,2]", TestApi.Schema(unregistered, "Permissions")["enum"]!.ToJsonString());
+        Assert.Equal(unregistered.ToJsonString(), registered.ToJsonString());
+    }
 }
