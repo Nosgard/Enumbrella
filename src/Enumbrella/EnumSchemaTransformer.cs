@@ -81,6 +81,8 @@ internal sealed class EnumSchemaTransformer : IOpenApiSchemaTransformer
         var members = new Dictionary<object, Member>();
         var hasDescriptions = false;
 
+        // GetFields returns fields in metadata order since .NET 7, and the C# compiler emits enum
+        // members in declaration order, so TryAdd keeps the first declared member of each value.
         foreach (var field in type.GetFields(BindingFlags.Public | BindingFlags.Static))
         {
             var description = DescriptionOf(field);
