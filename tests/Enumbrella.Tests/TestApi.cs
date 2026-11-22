@@ -202,6 +202,27 @@ internal static class TestApi
         };
     }
 
+    // Returns a copy without x-enum extensions and without enum where type is "integer". A type
+    // list such as ["null","integer"] keeps its enum.
+    public static JsonNode WithoutAddedKeywords(JsonNode node)
+    {
+        var copy = node.DeepClone();
+
+        foreach (var schema in Objects(copy).ToList())
+        {
+            var isInteger = schema["type"]?.ToJsonString() == "\"integer\"";
+            var added = schema
+                .Select(keyword => keyword.Key)
+                .Where(key => key.StartsWith("x-enum", StringComparison.Ordinal)
+                    || (isInteger && key == "enum"))
+                .ToList();
+
+            added.ForEach(key => schema.Remove(key));
+        }
+
+        return copy;
+    }
+
     // Checks enum and all three lists of one schema; null descriptions means no description list.
     public static void AssertEnum(
         JsonNode schema, string values, string names, string? descriptions)
