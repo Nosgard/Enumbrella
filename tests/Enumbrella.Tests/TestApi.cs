@@ -27,9 +27,14 @@ internal static class TestApi
 
     public static Action<OpenApiOptions> RegisterAfterEntries<TEnum>(string entries)
     {
-        return options => options
-            .AddSchemaTransformer(WriteEntries<TEnum>(entries))
-            .AddEnumDescriptions();
+        return WithEntries<TEnum>(entries, Register);
+    }
+
+    // Adds a schema transformer that writes entries into the enum of TEnum, then applies configure.
+    public static Action<OpenApiOptions> WithEntries<TEnum>(
+        string entries, Action<OpenApiOptions> configure)
+    {
+        return options => configure(options.AddSchemaTransformer(WriteEntries<TEnum>(entries)));
     }
 
     // Adds a schema transformer that sets the string type on TEnum, then applies configure.
