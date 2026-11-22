@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using Enumbrella.Sample;
 using Microsoft.AspNetCore.Builder;
@@ -20,6 +21,9 @@ internal static class TestApi
 
     public static readonly Action<OpenApiOptions> RegisterTwice =
         options => options.AddEnumDescriptions().AddEnumDescriptions();
+
+    public static readonly Action<JsonSerializerOptions> StringEnums =
+        json => json.Converters.Add(new JsonStringEnumConverter());
 
     public static Action<OpenApiOptions> RegisterAfterEntries<TEnum>(string entries)
     {

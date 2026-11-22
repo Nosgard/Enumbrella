@@ -201,8 +201,7 @@ public class StringEnumTests
     public async Task AddEnumDescriptions_StringsWithoutNamingPolicy_NamesMatchStrings()
     {
         // Given: OrderStatus as strings without a naming policy
-        await using var host = await TestApi.Start<Order>(
-            TestApi.Register, json => json.Converters.Add(new JsonStringEnumConverter()));
+        await using var host = await TestApi.Start<Order>(TestApi.Register, TestApi.StringEnums);
 
         // When: the document is generated
         var document = await TestApi.Fetch(host);
@@ -221,8 +220,8 @@ public class StringEnumTests
     public async Task AddEnumDescriptions_StringsWithoutDescriptions_HaveNoDescriptionList()
     {
         // Given: Priority as strings without a naming policy, with no description on any member
-        await using var host = await TestApi.Start<PriorityResponse>(
-            TestApi.Register, json => json.Converters.Add(new JsonStringEnumConverter()));
+        await using var host =
+            await TestApi.Start<PriorityResponse>(TestApi.Register, TestApi.StringEnums);
 
         // When: the document is generated
         var document = await TestApi.Fetch(host);
