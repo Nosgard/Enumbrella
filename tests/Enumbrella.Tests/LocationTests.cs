@@ -128,6 +128,42 @@ public class LocationTests
         AssertNumbersLikeUnregistered(registered, unregistered);
     }
 
+    [Fact]
+    public async Task AddEnumDescriptions_ApiWithoutEnums_MatchesUnregisteredDocument()
+    {
+        // Given: int as path parameter, query parameter and body element and no enum, in one host
+        // with the registration and one without
+        await using var registeredHost = await TestApi.StartLocations<int>(TestApi.Register);
+        await using var unregisteredHost = await TestApi.StartLocations<int>(_ => { });
+
+        // When: both documents are generated
+        var registered = await TestApi.Fetch(registeredHost);
+        var unregistered = await TestApi.Fetch(unregisteredHost);
+
+        // Then: both documents match character for character
+        Assert.Equal(unregistered.ToJsonString(), registered.ToJsonString());
+    }
+
+    [Fact]
+    public async Task AddEnumDescriptions_EnumsAtEveryLocation_DifferOnlyInAddedKeywords()
+    {
+        // Given: the described OrderStatus at every location, with OrderStatus? and the string
+        // enum Shade in the response, in one host with the registration and one without
+        await using var registeredHost =
+            await TestApi.StartLocations<MixedResponse, OrderStatus>(TestApi.Register);
+        await using var unregisteredHost =
+            await TestApi.StartLocations<MixedResponse, OrderStatus>(_ => { });
+
+        // When: both documents are generated
+        var registered = await TestApi.Fetch(registeredHost);
+        var unregistered = await TestApi.Fetch(unregisteredHost);
+
+        // Then: without its x-enum extensions and the enum of integer schemas, the document with
+        // the registration matches the one without
+        Assert.Equal(
+            unregistered.ToJsonString(), TestApi.WithoutAddedKeywords(registered).ToJsonString());
+    }
+
     private static void AssertNumbersLikeUnregistered(JsonNode registered, JsonNode unregistered)
     {
         Assert.Equal(

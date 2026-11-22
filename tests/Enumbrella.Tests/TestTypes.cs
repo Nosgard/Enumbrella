@@ -56,6 +56,8 @@ internal sealed record PermissionsResponse(Permissions Value, Permissions? Optio
 
 internal sealed record ScopeResponse(OrderStatus Status, OrderStatus? Optional, int? Count);
 
+internal sealed record MixedResponse(OrderStatus Status, OrderStatus? Optional, Shade Shade);
+
 internal sealed record TwoStatusesResponse(OrderStatus First, OrderStatus Second);
 
 internal sealed record NullableStatusResponse(OrderStatus? Status);
