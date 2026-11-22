@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
 using Enumbrella.Sample;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
@@ -64,6 +65,27 @@ internal static class TestApi
         return Start<TResponse>(WithInlineEnums(configure), configureJson);
     }
 
+    public static Task<WebApplication> StartLocations<TResponse, TValue>(
+        Action<OpenApiOptions> configure, Action<JsonSerializerOptions>? configureJson = null)
+        where TValue : struct
+    {
+        return Start(
+            configureJson,
+            app =>
+            {
+                MapResponse<TResponse>(app);
+                MapLocations<TValue>(app);
+            },
+            ("v1", configure));
+    }
+
+    public static Task<WebApplication> StartInlineLocations<TResponse, TValue>(
+        Action<OpenApiOptions> configure, Action<JsonSerializerOptions>? configureJson = null)
+        where TValue : struct
+    {
+        return StartLocations<TResponse, TValue>(WithInlineEnums(configure), configureJson);
+    }
+
     public static Task<WebApplication> StartEndpoints(params Action<WebApplication>[] endpoints)
     {
         return Start(
@@ -91,6 +113,22 @@ internal static class TestApi
     public static void MapPlainStatus(WebApplication app)
     {
         app.MapGet("/plain", () => default(OrderStatus));
+    }
+
+    // The handlers with TValue go through typed delegates, because RouteHandlerAnalyzer throws on
+    // a type parameter in a lambda passed straight to MapGet or MapPost (AD0001).
+    private static void MapLocations<TValue>(WebApplication app)
+        where TValue : struct
+    {
+        Func<TValue, int, IResult> statusAndId = (status, id) => Results.NoContent();
+        Func<TValue?, IResult> nullableStatus = status => Results.NoContent();
+        Func<TValue[], IResult> statusArray = statuses => Results.NoContent();
+
+        app.MapGet("/path/{status}/{id}", statusAndId);
+        app.MapGet("/query", statusAndId);
+        app.MapGet("/nullable-query", nullableStatus);
+        app.MapPost("/body", statusArray);
+        app.MapPost("/numbers", (int[] numbers) => Results.NoContent());
     }
 
     private static Func<OpenApiSchema, OpenApiSchemaTransformerContext, CancellationToken, Task>
@@ -193,6 +231,33 @@ internal static class TestApi
     public static JsonNode Property(JsonNode document, string component, string property)
     {
         return Schema(document, component)["properties"]![property]!;
+    }
+
+    // Returns the parameter called name of the GET operation at path.
+    public static JsonNode Parameter(JsonNode document, string path, string name)
+    {
+        var parameters = document["paths"]![path]!["get"]!["parameters"]!.AsArray();
+
+        return parameters.Single(parameter => (string?)parameter!["name"] == name)!;
+    }
+
+    // Returns the element schema of the JSON array that the POST operation at path reads.
+    public static JsonNode BodyItems(JsonNode document, string path)
+    {
+        var body = document["paths"]![path]!["post"]!["requestBody"]!;
+
+        return body["content"]!["application/json"]!["schema"]!["items"]!;
+    }
+
+    // Returns the status schemas at path parameter, query parameter and body element.
+    public static JsonNode[] LocationSchemas(JsonNode document)
+    {
+        return
+        [
+            Parameter(document, "/path/{status}/{id}", "status")["schema"]!,
+            Parameter(document, "/query", "status")["schema"]!,
+            BodyItems(document, "/body"),
+        ];
     }
 
     public static IEnumerable<JsonObject> Objects(JsonNode? node)
