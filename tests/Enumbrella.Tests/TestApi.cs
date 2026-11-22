@@ -28,6 +28,12 @@ internal static class TestApi
             .AddEnumDescriptions();
     }
 
+    // Adds a schema transformer that sets the string type on TEnum, then applies configure.
+    public static Action<OpenApiOptions> WithStringType<TEnum>(Action<OpenApiOptions> configure)
+    {
+        return options => configure(options.AddSchemaTransformer(WriteStringType<TEnum>));
+    }
+
     // Given
 
     public static Task<WebApplication> Start<TResponse>(
@@ -159,6 +165,17 @@ internal static class TestApi
 
             return Task.CompletedTask;
         };
+    }
+
+    private static Task WriteStringType<TEnum>(
+        OpenApiSchema schema, OpenApiSchemaTransformerContext context, CancellationToken _)
+    {
+        if (context.JsonTypeInfo.Type == typeof(TEnum))
+        {
+            schema.Type = JsonSchemaType.String;
+        }
+
+        return Task.CompletedTask;
     }
 
     private static Action<OpenApiOptions> WithInlineEnums(Action<OpenApiOptions> configure)
