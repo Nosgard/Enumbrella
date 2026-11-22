@@ -44,6 +44,14 @@ internal enum Permissions
     Write = 2,
 }
 
+[Flags]
+[JsonConverter(typeof(JsonStringEnumConverter))]
+internal enum StringPermissions
+{
+    Read = 1,
+    Write = 2,
+}
+
 internal sealed record PriorityResponse(Priority Priority);
 
 internal sealed record TemperatureResponse(Temperature Temperature);
@@ -53,6 +61,11 @@ internal sealed record LevelResponse(Level Level);
 internal sealed record DistanceResponse(Distance Distance);
 
 internal sealed record PermissionsResponse(Permissions Value, Permissions? Optional);
+
+internal sealed record StringPermissionsResponse(StringPermissions Value);
+
+internal sealed record ConvertedPermissionsResponse(
+    [property: JsonConverter(typeof(JsonStringEnumConverter))] Permissions Value);
 
 internal sealed record ScopeResponse(OrderStatus Status, OrderStatus? Optional, int? Count);
 
