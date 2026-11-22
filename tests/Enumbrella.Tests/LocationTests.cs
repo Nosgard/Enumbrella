@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using Enumbrella.Sample;
 
 namespace Enumbrella.Tests;
@@ -43,5 +44,100 @@ public class LocationTests
         Assert.All(
             TestApi.LocationSchemas(document),
             schema => TestApi.AssertEnum(schema, values, names, descriptions));
+    }
+
+    [Fact]
+    public async Task AddEnumDescriptions_NullableQueryParameter_KeepsNullabilityOfHost()
+    {
+        // Given: OrderStatus? only as query parameter, so the component comes from it, in one host
+        // with the registration and one without
+        await using var registeredHost = await TestApi.StartNullableQuery(TestApi.Register);
+        await using var unregisteredHost = await TestApi.StartNullableQuery(_ => { });
+
+        // When: both documents are generated
+        var registered = await TestApi.Fetch(registeredHost);
+        var unregistered = await TestApi.Fetch(unregisteredHost);
+
+        // Then: parameter and component match the host apart from the added keywords, and the
+        // component lists the values without null
+        Assert.Equal(
+            TestApi.Parameter(unregistered, "/nullable-query", "status").ToJsonString(),
+            TestApi.Parameter(registered, "/nullable-query", "status").ToJsonString());
+        Assert.Equal(
+            TestApi.Schema(unregistered, "OrderStatus").ToJsonString(),
+            TestApi.WithoutAddedKeywords(TestApi.Schema(registered, "OrderStatus")).ToJsonString());
+        TestApi.AssertStatusComponent(registered);
+    }
+
+    [Fact]
+    public async Task AddEnumDescriptions_InlineNullableQueryParameter_KeepsNullabilityOfHost()
+    {
+        // Given: OrderStatus? inline as query parameter, in hosts with and without the registration
+        await using var registeredHost =
+            await TestApi.StartInlineLocations<Order, OrderStatus>(TestApi.Register);
+        await using var unregisteredHost =
+            await TestApi.StartInlineLocations<Order, OrderStatus>(_ => { });
+
+        // When: both documents are generated
+        var registered = await TestApi.Fetch(registeredHost);
+        var unregistered = await TestApi.Fetch(unregisteredHost);
+
+        // Then: the parameter matches without the added keywords, and no list has an entry for null
+        var registeredQuery = TestApi.Parameter(registered, "/nullable-query", "status");
+        var unregisteredQuery = TestApi.Parameter(unregistered, "/nullable-query", "status");
+        var names = "[\"Pending\",\"Approved\",\"Rejected\"]";
+        var descriptions = "[\"Waiting for approval\",\"Approved\",\"\"]";
+
+        Assert.Equal(
+            unregisteredQuery.ToJsonString(),
+            TestApi.WithoutAddedKeywords(registeredQuery).ToJsonString());
+        TestApi.AssertEnum(registeredQuery["schema"]!, "[0,1,2]", names, descriptions);
+    }
+
+    [Fact]
+    public async Task AddEnumDescriptions_NumbersAtLocations_StayAsHostWroteThem()
+    {
+        // Given: int beside OrderStatus at path, query and body, with and without the registration
+        await using var registeredHost =
+            await TestApi.StartLocations<Order, OrderStatus>(TestApi.Register);
+        await using var unregisteredHost =
+            await TestApi.StartLocations<Order, OrderStatus>(_ => { });
+
+        // When: both documents are generated
+        var registered = await TestApi.Fetch(registeredHost);
+        var unregistered = await TestApi.Fetch(unregisteredHost);
+
+        // Then: each int location matches the one without the registration character for character
+        AssertNumbersLikeUnregistered(registered, unregistered);
+    }
+
+    [Fact]
+    public async Task AddEnumDescriptions_InlineNumbersAtLocations_StayAsHostWroteThem()
+    {
+        // Given: int beside inline OrderStatus at path, query and body, registered and unregistered
+        await using var registeredHost =
+            await TestApi.StartInlineLocations<Order, OrderStatus>(TestApi.Register);
+        await using var unregisteredHost =
+            await TestApi.StartInlineLocations<Order, OrderStatus>(_ => { });
+
+        // When: both documents are generated
+        var registered = await TestApi.Fetch(registeredHost);
+        var unregistered = await TestApi.Fetch(unregisteredHost);
+
+        // Then: each int location matches the one without the registration character for character
+        AssertNumbersLikeUnregistered(registered, unregistered);
+    }
+
+    private static void AssertNumbersLikeUnregistered(JsonNode registered, JsonNode unregistered)
+    {
+        Assert.Equal(
+            TestApi.Parameter(unregistered, "/path/{status}/{id}", "id").ToJsonString(),
+            TestApi.Parameter(registered, "/path/{status}/{id}", "id").ToJsonString());
+        Assert.Equal(
+            TestApi.Parameter(unregistered, "/query", "id").ToJsonString(),
+            TestApi.Parameter(registered, "/query", "id").ToJsonString());
+        Assert.Equal(
+            TestApi.BodyItems(unregistered, "/numbers").ToJsonString(),
+            TestApi.BodyItems(registered, "/numbers").ToJsonString());
     }
 }

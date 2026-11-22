@@ -65,6 +65,12 @@ internal static class TestApi
         return Start<TResponse>(WithInlineEnums(configure), configureJson);
     }
 
+    public static Task<WebApplication> StartLocations<TValue>(Action<OpenApiOptions> configure)
+        where TValue : struct
+    {
+        return Start(configureJson: null, MapLocations<TValue>, ("v1", configure));
+    }
+
     public static Task<WebApplication> StartLocations<TResponse, TValue>(
         Action<OpenApiOptions> configure, Action<JsonSerializerOptions>? configureJson = null)
         where TValue : struct
@@ -84,6 +90,16 @@ internal static class TestApi
         where TValue : struct
     {
         return StartLocations<TResponse, TValue>(WithInlineEnums(configure), configureJson);
+    }
+
+    // Maps OrderStatus only as the nullable query parameter status, so its component comes from
+    // there.
+    public static Task<WebApplication> StartNullableQuery(Action<OpenApiOptions> configure)
+    {
+        return Start(
+            configureJson: null,
+            app => app.MapGet("/nullable-query", (OrderStatus? status) => Results.NoContent()),
+            ("v1", configure));
     }
 
     public static Task<WebApplication> StartEndpoints(params Action<WebApplication>[] endpoints)
