@@ -1,8 +1,10 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using Enumbrella.Sample;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,11 +22,25 @@ internal static class TestApi
     public static readonly Action<OpenApiOptions> RegisterTwice =
         options => options.AddEnumDescriptions().AddEnumDescriptions();
 
+    public static readonly Action<JsonSerializerOptions> StringEnums =
+        json => json.Converters.Add(new JsonStringEnumConverter());
+
     public static Action<OpenApiOptions> RegisterAfterEntries<TEnum>(string entries)
     {
-        return options => options
-            .AddSchemaTransformer(WriteEntries<TEnum>(entries))
-            .AddEnumDescriptions();
+        return WithEntries<TEnum>(entries, Register);
+    }
+
+    // Adds a schema transformer that writes entries into the enum of TEnum, then applies configure.
+    public static Action<OpenApiOptions> WithEntries<TEnum>(
+        string entries, Action<OpenApiOptions> configure)
+    {
+        return options => configure(options.AddSchemaTransformer(WriteEntries<TEnum>(entries)));
+    }
+
+    // Adds a schema transformer that sets the string type on TEnum, then applies configure.
+    public static Action<OpenApiOptions> WithStringType<TEnum>(Action<OpenApiOptions> configure)
+    {
+        return options => configure(options.AddSchemaTransformer(WriteStringType<TEnum>));
     }
 
     // Given
@@ -61,13 +77,44 @@ internal static class TestApi
     public static Task<WebApplication> StartInlineEnums<TResponse>(
         Action<OpenApiOptions> configure, Action<JsonSerializerOptions>? configureJson = null)
     {
-        return Start<TResponse>(
-            options =>
+        return Start<TResponse>(WithInlineEnums(configure), configureJson);
+    }
+
+    public static Task<WebApplication> StartLocations<TValue>(Action<OpenApiOptions> configure)
+        where TValue : struct
+    {
+        return Start(configureJson: null, MapLocations<TValue>, ("v1", configure));
+    }
+
+    public static Task<WebApplication> StartLocations<TResponse, TValue>(
+        Action<OpenApiOptions> configure, Action<JsonSerializerOptions>? configureJson = null)
+        where TValue : struct
+    {
+        return Start(
+            configureJson,
+            app =>
             {
-                options.CreateSchemaReferenceId = InlineEnumReferenceId;
-                configure(options);
+                MapResponse<TResponse>(app);
+                MapLocations<TValue>(app);
             },
-            configureJson);
+            ("v1", configure));
+    }
+
+    public static Task<WebApplication> StartInlineLocations<TResponse, TValue>(
+        Action<OpenApiOptions> configure, Action<JsonSerializerOptions>? configureJson = null)
+        where TValue : struct
+    {
+        return StartLocations<TResponse, TValue>(WithInlineEnums(configure), configureJson);
+    }
+
+    // Maps OrderStatus only as the nullable query parameter status, so its component comes from
+    // there.
+    public static Task<WebApplication> StartNullableQuery(Action<OpenApiOptions> configure)
+    {
+        return Start(
+            configureJson: null,
+            app => app.MapGet("/nullable-query", (OrderStatus? status) => Results.NoContent()),
+            ("v1", configure));
     }
 
     public static Task<WebApplication> StartEndpoints(params Action<WebApplication>[] endpoints)
@@ -99,6 +146,22 @@ internal static class TestApi
         app.MapGet("/plain", () => default(OrderStatus));
     }
 
+    // The handlers with TValue go through typed delegates, because RouteHandlerAnalyzer throws on
+    // a type parameter in a lambda passed straight to MapGet or MapPost (AD0001).
+    private static void MapLocations<TValue>(WebApplication app)
+        where TValue : struct
+    {
+        Func<TValue, int, IResult> statusAndId = (status, id) => Results.NoContent();
+        Func<TValue?, IResult> nullableStatus = status => Results.NoContent();
+        Func<TValue[], IResult> statusArray = statuses => Results.NoContent();
+
+        app.MapGet("/path/{status}/{id}", statusAndId);
+        app.MapGet("/query", statusAndId);
+        app.MapGet("/nullable-query", nullableStatus);
+        app.MapPost("/body", statusArray);
+        app.MapPost("/numbers", (int[] numbers) => Results.NoContent());
+    }
+
     private static Func<OpenApiSchema, OpenApiSchemaTransformerContext, CancellationToken, Task>
         WriteEntries<TEnum>(string entries)
     {
@@ -110,6 +173,26 @@ internal static class TestApi
             }
 
             return Task.CompletedTask;
+        };
+    }
+
+    private static Task WriteStringType<TEnum>(
+        OpenApiSchema schema, OpenApiSchemaTransformerContext context, CancellationToken _)
+    {
+        if (context.JsonTypeInfo.Type == typeof(TEnum))
+        {
+            schema.Type = JsonSchemaType.String;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private static Action<OpenApiOptions> WithInlineEnums(Action<OpenApiOptions> configure)
+    {
+        return options =>
+        {
+            options.CreateSchemaReferenceId = InlineEnumReferenceId;
+            configure(options);
         };
     }
 
@@ -192,6 +275,33 @@ internal static class TestApi
         return Schema(document, component)["properties"]![property]!;
     }
 
+    // Returns the parameter called name of the GET operation at path.
+    public static JsonNode Parameter(JsonNode document, string path, string name)
+    {
+        var parameters = document["paths"]![path]!["get"]!["parameters"]!.AsArray();
+
+        return parameters.Single(parameter => (string?)parameter!["name"] == name)!;
+    }
+
+    // Returns the element schema of the JSON array that the POST operation at path reads.
+    public static JsonNode BodyItems(JsonNode document, string path)
+    {
+        var body = document["paths"]![path]!["post"]!["requestBody"]!;
+
+        return body["content"]!["application/json"]!["schema"]!["items"]!;
+    }
+
+    // Returns the status schemas at path parameter, query parameter and body element.
+    public static JsonNode[] LocationSchemas(JsonNode document)
+    {
+        return
+        [
+            Parameter(document, "/path/{status}/{id}", "status")["schema"]!,
+            Parameter(document, "/query", "status")["schema"]!,
+            BodyItems(document, "/body"),
+        ];
+    }
+
     public static IEnumerable<JsonObject> Objects(JsonNode? node)
     {
         return node switch
@@ -200,6 +310,27 @@ internal static class TestApi
             JsonArray array => array.SelectMany(Objects),
             _ => [],
         };
+    }
+
+    // Returns a copy without x-enum extensions and without enum where type is "integer". A type
+    // list such as ["null","integer"] keeps its enum.
+    public static JsonNode WithoutAddedKeywords(JsonNode node)
+    {
+        var copy = node.DeepClone();
+
+        foreach (var schema in Objects(copy).ToList())
+        {
+            var isInteger = schema["type"]?.ToJsonString() == "\"integer\"";
+            var added = schema
+                .Select(keyword => keyword.Key)
+                .Where(key => key.StartsWith("x-enum", StringComparison.Ordinal)
+                    || (isInteger && key == "enum"))
+                .ToList();
+
+            added.ForEach(key => schema.Remove(key));
+        }
+
+        return copy;
     }
 
     // Checks enum and all three lists of one schema; null descriptions means no description list.
@@ -219,6 +350,12 @@ internal static class TestApi
             "[0,1,2]",
             "[\"Pending\",\"Approved\",\"Rejected\"]",
             "[\"Waiting for approval\",\"Approved\",\"\"]");
+    }
+
+    public static void AssertOneStatusComponent(JsonNode document)
+    {
+        AssertSingleComponent(document, "OrderStatus");
+        AssertStatusComponent(document);
     }
 
     // Checks that one component name starts with name; a copy such as OrderStatus2 fails it.

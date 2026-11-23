@@ -1,5 +1,3 @@
-using System.Text.Json.Nodes;
-
 namespace Enumbrella.Tests;
 
 public class PropertyConverterTests
@@ -61,7 +59,8 @@ public class PropertyConverterTests
             names,
             names,
             "[\"Waiting for approval\",\"Approved\",\"\"]");
-        Assert.Equal(unregistered.ToJsonString(), WithoutAddedKeywords(registered).ToJsonString());
+        Assert.Equal(
+            unregistered.ToJsonString(), TestApi.WithoutAddedKeywords(registered).ToJsonString());
     }
 
     [Fact]
@@ -77,25 +76,7 @@ public class PropertyConverterTests
 
         // Then: the integer values get their names, and nothing else differs
         TestApi.AssertStatusComponent(registered);
-        Assert.Equal(unregistered.ToJsonString(), WithoutAddedKeywords(registered).ToJsonString());
-    }
-
-    private static JsonNode WithoutAddedKeywords(JsonNode document)
-    {
-        var copy = document.DeepClone();
-
-        foreach (var schema in TestApi.Objects(copy).ToList())
-        {
-            var isInteger = schema["type"]?.ToJsonString() == "\"integer\"";
-            var added = schema
-                .Select(keyword => keyword.Key)
-                .Where(key => key.StartsWith("x-enum", StringComparison.Ordinal)
-                    || (isInteger && key == "enum"))
-                .ToList();
-
-            added.ForEach(key => schema.Remove(key));
-        }
-
-        return copy;
+        Assert.Equal(
+            unregistered.ToJsonString(), TestApi.WithoutAddedKeywords(registered).ToJsonString());
     }
 }

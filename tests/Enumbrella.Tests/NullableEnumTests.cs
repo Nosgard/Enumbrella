@@ -1,5 +1,3 @@
-using System.Text.Json.Nodes;
-
 namespace Enumbrella.Tests;
 
 public class NullableEnumTests
@@ -14,11 +12,11 @@ public class NullableEnumTests
         var document = await TestApi.Fetch(host);
 
         // Then: the component lists the values and both name lists
-        AssertOneStatusComponent(document);
+        TestApi.AssertOneStatusComponent(document);
     }
 
     [Fact]
-    public async Task AddEnumDescriptions_NullablePropertyWithAndWithoutRegistration_KeepsItsOneOf()
+    public async Task AddEnumDescriptions_NullableProperty_KeepsNullabilityOfHost()
     {
         // Given: one host with the registration and one without
         await using var registeredHost =
@@ -29,13 +27,17 @@ public class NullableEnumTests
         var registered = await TestApi.Fetch(registeredHost);
         var unregistered = await TestApi.Fetch(unregisteredHost);
 
-        // Then: the property keeps its oneOf of null and the reference in both
+        // Then: the property keeps its oneOf of null and the reference in both, and the component
+        // matches the one without the registration apart from the added keywords
         var expected = "[{\"type\":\"null\"},{\"$ref\":\"#/components/schemas/OrderStatus\"}]";
         var unregisteredStatus = TestApi.Property(unregistered, "NullableStatusResponse", "status");
         var registeredStatus = TestApi.Property(registered, "NullableStatusResponse", "status");
 
         Assert.Equal(expected, unregisteredStatus["oneOf"]!.ToJsonString());
         Assert.Equal(expected, registeredStatus["oneOf"]!.ToJsonString());
+        Assert.Equal(
+            TestApi.Schema(unregistered, "OrderStatus").ToJsonString(),
+            TestApi.WithoutAddedKeywords(TestApi.Schema(registered, "OrderStatus")).ToJsonString());
     }
 
     [Fact]
@@ -111,7 +113,7 @@ public class NullableEnumTests
         var document = await TestApi.Fetch(host);
 
         // Then: both share one component whose values hold no null
-        AssertOneStatusComponent(document);
+        TestApi.AssertOneStatusComponent(document);
     }
 
     [Fact]
@@ -124,7 +126,7 @@ public class NullableEnumTests
         var document = await TestApi.Fetch(host);
 
         // Then: both share one component whose values hold no null
-        AssertOneStatusComponent(document);
+        TestApi.AssertOneStatusComponent(document);
     }
 
     [Fact]
@@ -138,7 +140,7 @@ public class NullableEnumTests
         var document = await TestApi.Fetch(host);
 
         // Then: both share one component whose values hold no null
-        AssertOneStatusComponent(document);
+        TestApi.AssertOneStatusComponent(document);
     }
 
     [Fact]
@@ -152,12 +154,6 @@ public class NullableEnumTests
         var document = await TestApi.Fetch(host);
 
         // Then: both share one component whose values hold no null
-        AssertOneStatusComponent(document);
-    }
-
-    private static void AssertOneStatusComponent(JsonNode document)
-    {
-        TestApi.AssertSingleComponent(document, "OrderStatus");
-        TestApi.AssertStatusComponent(document);
+        TestApi.AssertOneStatusComponent(document);
     }
 }

@@ -8,7 +8,8 @@ public static class EnumbrellaOpenApiOptionsExtensions
     /// <summary>
     /// Adds the value list, the member names (<c>x-enum-varnames</c>, <c>x-enumNames</c>) and,
     /// when a member carries <see cref="System.ComponentModel.DescriptionAttribute"/>, the member
-    /// descriptions to the enum schemas of the document these options belong to.
+    /// descriptions to the enum schemas of the document these options belong to. The schema of an
+    /// enum with <see cref="FlagsAttribute"/> stays unchanged.
     /// </summary>
     /// <param name="options">The options passed by <c>AddOpenApi</c>.</param>
     /// <returns>The same <paramref name="options"/> for further calls.</returns>

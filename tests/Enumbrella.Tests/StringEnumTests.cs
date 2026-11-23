@@ -154,11 +154,54 @@ public class StringEnumTests
     }
 
     [Fact]
+    public async Task AddEnumDescriptions_CamelCaseStringsAtPathQueryAndBody_ShareNamedComponent()
+    {
+        // Given: camelCase OrderStatus strings at path parameter, query parameter and body element
+        await using var host =
+            await TestApi.StartLocations<Order, OrderStatus>(TestApi.Register, CamelCaseStrings);
+
+        // When: the document is generated
+        var document = await TestApi.Fetch(host);
+
+        // Then: the three locations refer to the component, which lists C# names and descriptions
+        var reference = "{\"$ref\":\"#/components/schemas/OrderStatus\"}";
+
+        Assert.All(
+            TestApi.LocationSchemas(document),
+            schema => Assert.Equal(reference, schema.ToJsonString()));
+        TestApi.AssertEnum(
+            TestApi.Schema(document, "OrderStatus"),
+            "[\"pending\",\"approved\",\"rejected\"]",
+            "[\"Pending\",\"Approved\",\"Rejected\"]",
+            "[\"Waiting for approval\",\"Approved\",\"\"]");
+    }
+
+    [Fact]
+    public async Task AddEnumDescriptions_InlineCamelCaseStringsAtPathQueryAndBody_NameEachString()
+    {
+        // Given: OrderStatus inline as camelCase strings at path parameter, query parameter and
+        // body element
+        await using var host = await TestApi.StartInlineLocations<Order, OrderStatus>(
+            TestApi.Register, CamelCaseStrings);
+
+        // When: the document is generated
+        var document = await TestApi.Fetch(host);
+
+        // Then: at each of the three locations, each string gets its C# name and its description
+        var values = "[\"pending\",\"approved\",\"rejected\"]";
+        var names = "[\"Pending\",\"Approved\",\"Rejected\"]";
+        var descriptions = "[\"Waiting for approval\",\"Approved\",\"\"]";
+
+        Assert.All(
+            TestApi.LocationSchemas(document),
+            schema => TestApi.AssertEnum(schema, values, names, descriptions));
+    }
+
+    [Fact]
     public async Task AddEnumDescriptions_StringsWithoutNamingPolicy_NamesMatchStrings()
     {
         // Given: OrderStatus as strings without a naming policy
-        await using var host = await TestApi.Start<Order>(
-            TestApi.Register, json => json.Converters.Add(new JsonStringEnumConverter()));
+        await using var host = await TestApi.Start<Order>(TestApi.Register, TestApi.StringEnums);
 
         // When: the document is generated
         var document = await TestApi.Fetch(host);
@@ -177,8 +220,8 @@ public class StringEnumTests
     public async Task AddEnumDescriptions_StringsWithoutDescriptions_HaveNoDescriptionList()
     {
         // Given: Priority as strings without a naming policy, with no description on any member
-        await using var host = await TestApi.Start<PriorityResponse>(
-            TestApi.Register, json => json.Converters.Add(new JsonStringEnumConverter()));
+        await using var host =
+            await TestApi.Start<PriorityResponse>(TestApi.Register, TestApi.StringEnums);
 
         // When: the document is generated
         var document = await TestApi.Fetch(host);
