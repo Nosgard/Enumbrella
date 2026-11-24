@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.OpenApi;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi;
+using Microsoft.OpenApi.Reader;
 
 namespace Enumbrella.Tests;
 
@@ -259,6 +260,13 @@ internal static class TestApi
     }
 
     // Then
+
+    // Reads a document with the reader's default rules. Tests call the reader only here, so the
+    // test on a document without info covers the error list of the others.
+    public static ReadResult Read(string document)
+    {
+        return OpenApiDocument.Parse(document, "json", new OpenApiReaderSettings());
+    }
 
     public static JsonObject Schemas(JsonNode document)
     {
