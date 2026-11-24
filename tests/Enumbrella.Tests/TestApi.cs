@@ -381,4 +381,19 @@ internal static class TestApi
             property => property.Key == "enum"
                 || property.Key.StartsWith("x-enum", StringComparison.Ordinal)));
     }
+
+    // Checks that the reader kept all three lists of each named component as extensions. In 3.1
+    // the reader takes a key without x- as an unrecognized keyword and reports no error.
+    public static void AssertListExtensions(OpenApiDocument document, params string[] names)
+    {
+        Assert.All(names, name =>
+        {
+            var extensions = document.Components!.Schemas![name].Extensions;
+
+            Assert.NotNull(extensions);
+            Assert.Contains("x-enum-varnames", extensions);
+            Assert.Contains("x-enumNames", extensions);
+            Assert.Contains("x-enum-descriptions", extensions);
+        });
+    }
 }
