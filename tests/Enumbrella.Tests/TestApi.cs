@@ -52,6 +52,15 @@ internal static class TestApi
         return Start(configureJson, MapResponse<TResponse>, ("v1", configure));
     }
 
+    // Maps an endpoint that declares responseType, which a test can build at run time.
+    public static Task<WebApplication> Start(Type responseType, Action<OpenApiOptions> configure)
+    {
+        return Start(
+            configureJson: null,
+            app => app.MapGet("/", () => { }).Produces(200, responseType),
+            ("v1", configure));
+    }
+
     public static async Task<WebApplication> Start(
         Action<JsonSerializerOptions>? configureJson,
         Action<WebApplication> mapEndpoints,
