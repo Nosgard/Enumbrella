@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.OpenApi;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi;
+using Microsoft.OpenApi.Reader;
 
 namespace Enumbrella.Tests;
 
@@ -49,6 +50,15 @@ internal static class TestApi
         Action<OpenApiOptions> configure, Action<JsonSerializerOptions>? configureJson = null)
     {
         return Start(configureJson, MapResponse<TResponse>, ("v1", configure));
+    }
+
+    // Maps an endpoint that declares responseType, which a test can build at run time.
+    public static Task<WebApplication> Start(Type responseType, Action<OpenApiOptions> configure)
+    {
+        return Start(
+            configureJson: null,
+            app => app.MapGet("/", () => { }).Produces(200, responseType),
+            ("v1", configure));
     }
 
     public static async Task<WebApplication> Start(
@@ -260,6 +270,13 @@ internal static class TestApi
 
     // Then
 
+    // Reads a document with the reader's default rules. Tests call the reader only here, so the
+    // test on a document without info covers the error list of the others.
+    public static ReadResult Read(string document)
+    {
+        return OpenApiDocument.Parse(document, "json", new OpenApiReaderSettings());
+    }
+
     public static JsonObject Schemas(JsonNode document)
     {
         return document["components"]!["schemas"]!.AsObject();
@@ -372,5 +389,20 @@ internal static class TestApi
             Schema(document, name).AsObject(),
             property => property.Key == "enum"
                 || property.Key.StartsWith("x-enum", StringComparison.Ordinal)));
+    }
+
+    // Checks that the reader kept all three lists of each named component as extensions. In 3.1
+    // the reader takes a key without x- as an unrecognized keyword and reports no error.
+    public static void AssertListExtensions(OpenApiDocument document, params string[] names)
+    {
+        Assert.All(names, name =>
+        {
+            var extensions = document.Components!.Schemas![name].Extensions;
+
+            Assert.NotNull(extensions);
+            Assert.Contains("x-enum-varnames", extensions);
+            Assert.Contains("x-enumNames", extensions);
+            Assert.Contains("x-enum-descriptions", extensions);
+        });
     }
 }

@@ -92,3 +92,5 @@ internal sealed record StringFirstResponse(
 internal sealed record NumberFirstResponse(
     OrderStatus First,
     [property: JsonConverter(typeof(JsonStringEnumConverter))] OrderStatus Second);
+
+internal sealed record ValueResponse<TValue>(TValue Value);
